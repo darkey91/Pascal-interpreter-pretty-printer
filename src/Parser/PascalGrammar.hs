@@ -1,25 +1,26 @@
 --{-# LANGUAGE GADTs #-}
 
 module Parser.PascalGrammar
-  ( Program(..)
-  , Block(..)
-  , CompoundStatement
-  , Statements
-  , Statement(..)
-  , Constant(..)
-  , ConstantDefParts
-  , ConstantDefPart
-  , VarDeclParts
-  , VarDeclPart
-  , VariableDeclaration(..)
-  , ProcedureAndFunctionDeclParts
-  , ProcedureOrFunctionDeclaration(..)
-  , ParameterSection
-  , Parameter
-  , PascalType(..)
-  , PascalTypedValue(..)
-  , Increment(..)
-  , Expr(..)
+  ( Program (..),
+    Block (..),
+    Statements(..),
+    Statement (..),
+    Constant (..),
+    ConstantDefParts,
+    ConstantDefPart(..),
+    VarDeclParts,
+    VarDeclPart(..),
+    VariableDeclaration (..),
+    ProcedureAndFunctionDeclParts,
+    ProcedureOrFunctionDeclaration (..),
+    ParameterSection,
+    Parameter,
+    PascalType (..),
+    PascalTypedValue (..),
+    Increment (..),
+    Expr (..),
+    isCompound,
+    isEmpty
   )
 where
 
@@ -27,18 +28,19 @@ data Program = Program
   { programIdent :: String,
     programBlock :: Block
   }
+  deriving (Eq, Show)
 
 data Block
-  = SimpleBlock CompoundStatement
+  = SimpleBlock Statements
   | BlockWithConst ConstantDefParts Block
   | BlockWithVar VarDeclParts Block
   | BlockWithFunc ProcedureAndFunctionDeclParts Block
-
-type CompoundStatement = Statements
+  deriving (Eq, Show)
 
 type ConstantDefParts = [ConstantDefPart]
 
-type ConstantDefPart = [Constant]
+newtype ConstantDefPart = ConstantDefPart { constantDefPartDefs :: [Constant] }
+  deriving (Eq, Show)
 
 data Constant = Constant
   { constIdent :: VariableIdent,
@@ -46,29 +48,35 @@ data Constant = Constant
     isConstVar :: Bool,
     isConstNeg :: Bool
   }
+  deriving (Eq, Show)
 
 type VarDeclParts = [VarDeclPart]
 
-type VarDeclPart = [VariableDeclaration]
+newtype VarDeclPart = VarDeclPart { varDeclPartDecls :: [VariableDeclaration]}
+  deriving (Eq, Show)
 
 data VariableDeclaration = VariableDeclaration
-  { variableIdents :: [VariableIdent],
-    variableType :: PascalType
+  { variableDeclarationIdents :: [VariableIdent],
+    variableDeclarationType :: PascalType
   }
+  deriving (Eq, Show)
 
 type ProcedureAndFunctionDeclParts = [ProcedureOrFunctionDeclaration]
 
 data ProcedureOrFunctionDeclaration = ProcedureOrFunctionDeclaration
   { functionIdent :: Identifier,
     functionParameters :: ParameterSection,
-    functionReturnType :: PascalType
+    functionReturnType :: PascalType,
+    functionBlock :: Block
   }
+  deriving (Eq, Show)
 
 type ParameterSection = [Parameter]
 
 type Parameter = VariableDeclaration
 
 data PascalType = PascalString | PascalInteger | PascalReal | PascalBoolean | PascalChar | PascalVoid
+  deriving (Eq, Show)
 
 data PascalTypedValue
   = PascalStringValue String
@@ -76,8 +84,10 @@ data PascalTypedValue
   | PascalRealValue Double
   | PascalBooleanValue Bool
   | PascalCharValue Char
+  deriving (Eq, Show)
 
-type Statements = [Statement]
+newtype Statements = Statements { statements :: [Statement] } 
+  deriving (Eq, Show)
 
 type SuccessfulCase = Statement
 
@@ -86,14 +96,26 @@ type UnsuccessfulCase = Statement
 data Statement
   = AssignmentStmt Identifier Expr
   | ProcedureStmt Identifier ParameterSection
-  | CompoundStmt CompoundStatement
+  | CompoundStatement Statements
   | IfStatement Expr SuccessfulCase UnsuccessfulCase
   | ForStatement Identifier Expr Increment Expr Statement
   | WhileStatement Expr Statement
   | RepeatStatement Statements Expr
   | EmptyStatement
+  deriving (Eq, Show)
+  
+isCompound :: Statement -> Bool
+isCompound stmt = case stmt of
+  CompoundStatement _ -> True
+  _                   -> False
+
+isEmpty :: Statement -> Bool  
+isEmpty stmt = case stmt of
+  EmptyStatement -> True
+  _              -> False  
 
 data Increment = To | DownTo
+  deriving (Eq, Show)
 
 type VariableIdent = Identifier
 
@@ -119,6 +141,7 @@ data Expr
   | ExprNot Expr
   | ExprVar String
   | ExprFunctionDesignator String ParameterSection
+  deriving (Eq, Show)
 
 --todo think about concatenation
 --data Expr a where
@@ -143,7 +166,6 @@ data Expr
 --               Left msg      -> Left msg
 --               Right (x, r') -> runInterp (k x) r'
 --  fail msg = Interp $ \_ -> Left msg
-
 
 --		| IDENTIFIER '=' IDENTIFIER					{ Constant $1 $3 True False }
 --  	| IDENTIFIER '=' '-' IDENTIFIER				{ Constant $1 $4 True True}

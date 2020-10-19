@@ -2,11 +2,13 @@
 module Parser.PascalParser where
 import Parser.PascalLexer
 import Parser.PascalGrammar
+import Control.Monad.Except
 }
 
 %name       parsePascalCode
 %tokentype  { Token }
 %error      { parseError }
+%monad { Except String } { (>>=) } { return }
 
 %token
 	PROGRAM			{ ProgramToken }
@@ -80,7 +82,7 @@ ProgramHeading
     : PROGRAM IDENTIFIER ';'								{ $2 }
 
 Block
-    : CompoundStatement										{ SimpleBlock $1 }
+    : BEGIN Statements END									{ SimpleBlock $2 }
     | ConstantDefParts Block								{ BlockWithConst $1 $2 }
     | VarDeclParts Block									{ BlockWithVar $1 $2 }
     | ProcedureAndFunctionDeclParts Block					{ BlockWithFunc $1 $2 }
@@ -90,7 +92,7 @@ ConstantDefParts
     | ConstantDefPart ConstantDefParts						{ $1 : $2 }
 
 ConstantDefPart
-	: CONST ConstantDefinitions                  			{ $2 }
+	: CONST ConstantDefinitions                  			{ ConstantDefPart $2 }
 
 ConstantDefinitions
 	: ConstantDefinition ';'						{ [$1] }
@@ -113,7 +115,7 @@ VarDeclParts
     | VarDeclPart VarDeclParts				{ $1 : $2 }
 
 VarDeclPart
-	: VAR VarDeclarations					{ $2 }
+	: VAR VarDeclarations					{ VarDeclPart $2 }
 
 VarDeclarations
 	: VarDeclaration ';'					{ [$1] }
@@ -138,12 +140,12 @@ ProcedureAndFunctionDeclPart
     | FunctionDeclaration													{ $1 }
 
 ProcedureDeclaration
-	: PROCEDURE IDENTIFIER ';' Block										{ ProcedureOrFunctionDeclaration $2 [] PascalVoid }
-	| PROCEDURE IDENTIFIER ParameterSection ';' Block						{ ProcedureOrFunctionDeclaration $2 $3 PascalVoid }
+	: PROCEDURE IDENTIFIER ';' Block										{ ProcedureOrFunctionDeclaration $2 [] PascalVoid $4 }
+	| PROCEDURE IDENTIFIER ParameterSection ';' Block						{ ProcedureOrFunctionDeclaration $2 $3 PascalVoid $5 }
 
 FunctionDeclaration
-   : FUNCTION IDENTIFIER ':' TypeIdentifier ';' Block						{ ProcedureOrFunctionDeclaration $2 [] $4 }
-   | FUNCTION IDENTIFIER ParameterSection ':' TypeIdentifier ';' Block		{ ProcedureOrFunctionDeclaration $2 $3 $5 }
+   : FUNCTION IDENTIFIER ':' TypeIdentifier ';' Block						{ ProcedureOrFunctionDeclaration $2 [] $4 $6 }
+   | FUNCTION IDENTIFIER ParameterSection ':' TypeIdentifier ';' Block		{ ProcedureOrFunctionDeclaration $2 $3 $5 $7 }
 
 ParameterSection
 	: '(' ParameterList ')'					{ $2 }
@@ -155,17 +157,14 @@ ParameterList
 Parameter
 	: IdentifierList ':' TypeIdentifier		{ VariableDeclaration $1 $3 }
 
-CompoundStatement
-    : BEGIN Statements END					{ $2 }
-
 Statements
-    : Statement								{ [$1] }
-    | Statement ';' Statements				{ $1 : $3 }
+    : Statement								{ Statements [$1] }
+    | Statement ';' Statements				{ Statements ($1 : statements $3) }
 
 Statement
 	: AssignmentStatement		{ $1 }
 	| ProcedureStatement		{ $1 }
-    | CompoundStatement			{ CompoundStmt $1 }
+    | BEGIN Statements END		{ CompoundStatement $2 }
     | IfStatement				{ $1 }
     | ForStatement				{ $1 }
     | WhileStatement			{ $1 }
@@ -232,6 +231,7 @@ IdentifierList
 
 
 {
-parseError :: [Token] -> a
-parseError _ = error "Parse error"
+parseError :: [Token] -> Except String a
+parseError (l:ls) = throwError $ "Unexpected token: " ++ (show l)
+parseError [] = throwError "Unexpected EOF"
 }

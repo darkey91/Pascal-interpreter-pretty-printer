@@ -1,0 +1,74 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: dbf0264376bf630ad33ef57d1a6869f3958ad88b8ca09dcc25954b8f39ea4c21
+
+name:           interp
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/darkey91/interp#readme>
+homepage:       https://github.com/darkey91/interp#readme
+bug-reports:    https://github.com/darkey91/interp/issues
+author:         Diana Kudaiberdieva
+maintainer:     eglet91@gmail.com
+copyright:      2020 Diana Kudaiberdieva
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+    src/Parser/PascalLexer.x
+
+source-repository head
+  type: git
+  location: https://github.com/darkey91/interp
+
+library
+  exposed-modules:
+      Lib
+      Parser.PascalGrammar
+      Parser.PascalLexer
+      Parser.PascalParser
+  other-modules:
+      Paths_interp
+  hs-source-dirs:
+      src
+  build-depends:
+      array
+    , base >=4.7 && <5
+    , mtl
+    , transformers
+  default-language: Haskell2010
+
+executable interp-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_interp
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , interp
+    , transformers
+    , mtl
+    , filepath
+  default-language: Haskell2010
+
+test-suite interp-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Parser.PascalLexerSpec
+      Paths_interp
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base >=4.7 && <5
+    , hspec
+    , interp
+  default-language: Haskell2010
