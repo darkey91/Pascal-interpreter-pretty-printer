@@ -24,8 +24,6 @@ import Control.Monad.Except
     FOR             { ForToken }
     TO              { ToToken }
     DOWNTO          { DownToToken }
-    REPEAT          { RepeatToken }
-    UNTIL           { UntilToken }
     IF              { IfToken }
     THEN            { ThenToken }
     ELSE            { ElseToken }
@@ -168,7 +166,6 @@ Statement
     | IfStatement				{ $1 }
     | ForStatement				{ $1 }
     | WhileStatement			{ $1 }
-	| RepeatStatement			{ $1 }
 	| {- empty -}				{ EmptyStatement }
 
 AssignmentStatement
@@ -221,9 +218,6 @@ WhileStatement
 ForStatement
     : FOR IDENTIFIER ASSIGN  Expression TO  Expression DO Statement			{ ForStatement $2 $4 To $6 $8 }
     | FOR IDENTIFIER ASSIGN  Expression DOWNTO Expression DO Statement		{ ForStatement $2 $4 DownTo $6 $8 }
-
-RepeatStatement
-    : REPEAT Statements UNTIL Expression            { RepeatStatement $2 $4 }
 
 IdentifierList
 	: IDENTIFIER						{ [$1] }

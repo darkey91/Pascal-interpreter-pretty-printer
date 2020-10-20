@@ -25,7 +25,7 @@ module Parser.PascalGrammar
 where
 
 data Program = Program
-  { programIdent :: String,
+  { programIdent :: Identifier,
     programBlock :: Block
   }
   deriving (Eq, Show)
@@ -100,7 +100,6 @@ data Statement
   | IfStatement Expr SuccessfulCase UnsuccessfulCase
   | ForStatement Identifier Expr Increment Expr Statement
   | WhileStatement Expr Statement
-  | RepeatStatement Statements Expr
   | EmptyStatement
   deriving (Eq, Show)
   

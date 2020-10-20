@@ -1,127 +1,172 @@
 module PrettyPrinter where
 
+import Control.Monad (join)
 import Data.Char (toLower)
 import Data.List (intercalate)
 import Parser.PascalGrammar
 import Utils
 
-class PrettyPrinterable p where
-  prettyPrint :: p -> String
+addSuffixToLastStr :: String -> [String] -> [String]
+addSuffixToLastStr _ [] = []
+addSuffixToLastStr c ss = init ss ++ [last ss ++ c]
+
+class PrettyPrintable p where
+  prettyPrint :: p -> [String]
+
+  pprintWithTab :: p -> [String]
+  pprintWithTab = map ('\t' :) . prettyPrint
+
+class PrettyPrintableStr p where
+  prettyPrintStr :: p -> String
 
   prettyPrintMapped :: (String -> String) -> p -> String
-  prettyPrintMapped f = f . prettyPrint
+  prettyPrintMapped f = f . prettyPrintStr
 
   prettyPrintWithSemi :: p -> String
   prettyPrintWithSemi = prettyPrintMapped (++ ";")
 
-  prettyPrintWithQuotes :: p -> String
-  prettyPrintWithQuotes = prettyPrintMapped (\s -> "'" ++ s ++ "'")
+  prettyPrintStrWithQuotes :: p -> String
+  prettyPrintStrWithQuotes = prettyPrintMapped (\s -> "'" ++ s ++ "'")
 
-  prettyPrintWithTab :: p -> String
-  prettyPrintWithTab = prettyPrintMapped (\s -> '\n' : '\t' : s)
-  
-  prettyPrintElemsWithTab :: [p] -> String
-  prettyPrintElemsWithTab = concatMap prettyPrintWithTab
+  prettyPrintStrWithTab :: p -> String
+  prettyPrintStrWithTab = prettyPrintMapped ('\t' :)
 
-instance PrettyPrinterable Program where
-  prettyPrint p = concat ["program ", programIdent p, ";", prettyPrint $ programBlock p, "."]
+  prettyPrintStrsWithTab :: [p] -> String
+  prettyPrintStrsWithTab = concatMap prettyPrintStrWithTab
 
-instance PrettyPrinterable Block where
-  prettyPrint (SimpleBlock stmts) = concat ["\nbegin", prettyPrintElemsWithTab stmts, "\nend"]
+  pprintStringsWithTab :: [p] -> [String]
+  pprintStringsWithTab = map (\c -> '\t' : prettyPrintStr c)
+
+instance PrettyPrintable Program where
+  prettyPrint p = do
+    let programHeading = "program " ++ programIdent p ++ ";"
+    let body = addSuffixToLastStr "." $ prettyPrint $ programBlock p
+    programHeading : body
+
+instance PrettyPrintable Block where
+  prettyPrint (SimpleBlock stmts) = "begin" : pprintWithTab stmts ++ ["end"]
   prettyPrint (BlockWithConst constDefs block) = prettyPrint constDefs ++ prettyPrint block
   prettyPrint (BlockWithVar varDecl block) = prettyPrint varDecl ++ prettyPrint block
   prettyPrint (BlockWithFunc procAndFuncDecls block) = prettyPrint procAndFuncDecls ++ prettyPrint block
 
-instance PrettyPrinterable ConstantDefPart where
-  prettyPrint constPart = "\nconst" ++ constDefs
+instance PrettyPrintable ConstantDefPart where
+  prettyPrint constPart = do
+    let constKw = "const"
+    let (singleDef, otherDef) = case constantDefPartDefs constPart of
+          [c] -> (' ' : prettyPrintStr c, [])
+          cs -> ([], pprintStringsWithTab cs)
+    (constKw ++ singleDef) : otherDef
+
+instance PrettyPrintableStr Constant where
+  prettyPrintStr c = do
+    let sign = isConstNeg c ? "-" :? ""
+    let value = (isConstVar c ? prettyPrintStrWithQuotes :? prettyPrintStr) . constValue
+    constIdent c ++ " = " ++ sign ++ value c ++ ";"
+
+instance PrettyPrintable VarDeclPart where
+  prettyPrint varPart = do
+    let varKw = "var"
+    let (singleDef, otherDef) = case varDeclPartDecls varPart of
+          [v] -> (' ' : prettyPrintStr v, [])
+          vs -> ([], pprintStringsWithTab vs)
+    (varKw ++ singleDef) : otherDef
+
+instance PrettyPrintable ProcedureOrFunctionDeclaration where
+  prettyPrint fDecl = do
+    let params = prettyPrintStr $ functionParameters fDecl
+    let (funcOrProc, returnType) = case functionReturnType fDecl of
+          PascalVoid -> ("\nprocedure ", "")
+          otherType -> ("\nfunction", ':' : ' ' : prettyPrintStr otherType)
+    (funcOrProc ++ functionIdent fDecl ++ params ++ returnType) : prettyPrint (functionBlock fDecl)
+
+instance PrettyPrintable Statements where
+  prettyPrint stmts = case statements stmts of
+    [stmt] -> prettyPrint stmt
+    st -> do
+      let initPart = join $ map (addSuffixToLastStr ";" . prettyPrint) (init st)
+      let lastPart = prettyPrint $ last st
+      initPart ++ lastPart
+
+pprintStatement :: Statement -> [String]
+pprintStatement s = (isCompound s ? prettyPrint :? pprintWithTab) s
+
+instance PrettyPrintable Statement where
+  prettyPrint (AssignmentStmt ident expr) = [ident ++ " := " ++ prettyPrintStr expr]
+  prettyPrint (ProcedureStmt ident params) = [ident ++ prettyPrintStr params]
+  prettyPrint (CompoundStatement stmts) = "begin" : pprintWithTab stmts ++ ["end"]
+  prettyPrint (WhileStatement expr stmt) = unwords ["while", prettyPrintStr expr, "do"] : pprintStatement stmt
+  prettyPrint EmptyStatement = []
+  prettyPrint (ForStatement ident exprFrom incr exprTo stmt) = do
+    let forHeader = unwords ["for", ident, ":=", prettyPrintStr exprFrom, prettyPrintStr incr, prettyPrintStr exprTo, "do"]
+    forHeader : pprintStatement stmt
+  prettyPrint (IfStatement expr succStmt unsuccStmt) = do
+    let ifHeader = "if " ++ prettyPrintStr expr ++ " then"
+    let succCase = (isCompound succStmt ? prettyPrint :? pprintWithTab) succStmt
+    let unsuccCase = case unsuccStmt of
+          EmptyStatement -> []
+          other -> "else" : pprintStatement other
+    ifHeader : succCase ++ succCase ++ unsuccCase
+
+instance PrettyPrintableStr Expr where
+  prettyPrintStr (ExprBracketed expr) = '(' : prettyPrintStr expr ++ ")"
+  prettyPrintStr (ExprVal t) = prettyPrintStr t
+  prettyPrintStr (ExprNeg expr) = '-' : prettyPrintStr expr
+  prettyPrintStr (ExprPlus l r) = prettyPrintStr l ++ " + " ++ prettyPrintStr r
+  prettyPrintStr (ExprMinus l r) = prettyPrintStr l ++ " - " ++ prettyPrintStr r
+  prettyPrintStr (ExprMul l r) = prettyPrintStr l ++ " * " ++ prettyPrintStr r
+  prettyPrintStr (ExprDiv l r) = prettyPrintStr l ++ " \\ " ++ prettyPrintStr r
+  prettyPrintStr (ExprIntDiv l r) = prettyPrintStr l ++ " div " ++ prettyPrintStr r
+  prettyPrintStr (ExprEq l r) = prettyPrintStr l ++ " = " ++ prettyPrintStr r
+  prettyPrintStr (ExprNeq l r) = prettyPrintStr l ++ " <> " ++ prettyPrintStr r
+  prettyPrintStr (ExprGT l r) = prettyPrintStr l ++ " > " ++ prettyPrintStr r
+  prettyPrintStr (ExprLT l r) = prettyPrintStr l ++ " < " ++ prettyPrintStr r
+  prettyPrintStr (ExprGE l r) = prettyPrintStr l ++ " >= " ++ prettyPrintStr r
+  prettyPrintStr (ExprLE l r) = prettyPrintStr l ++ " <= " ++ prettyPrintStr r
+  prettyPrintStr (ExprAnd l r) = prettyPrintStr l ++ " and " ++ prettyPrintStr r
+  prettyPrintStr (ExprOr l r) = prettyPrintStr l ++ " or " ++ prettyPrintStr r
+  prettyPrintStr (ExprNot expr) = "not " ++ prettyPrintStr expr
+  prettyPrintStr (ExprVar str) = str
+  prettyPrintStr (ExprFunctionDesignator str params) = str ++ "(" ++ prettyPrintStr params ++ ")"
+
+instance PrettyPrintableStr VariableDeclaration where
+  prettyPrintStr c = unwords [ident ++ ":", pasType ++ ";"]
     where
-      constDefs = case constantDefPartDefs constPart of
-        [] -> ""
-        [c] -> ' ' : prettyPrint c
-        cs -> prettyPrintElemsWithTab cs
+      ident = intercalate ", " $ map prettyPrintStr $ variableDeclarationIdents c
+      pasType = prettyPrintStr $ variableDeclarationType c
 
-instance PrettyPrinterable Constant where
-  prettyPrint c = unwords [ident, "=", val] ++ ";"
-    where
-      ident = prettyPrint (constIdent c)
-      sign = isConstNeg c ? "-" :? ""
-      val = sign ++ (isConstVar c ? prettyPrintWithQuotes ?: prettyPrint) c
+instance PrettyPrintableStr PascalTypedValue where
+  prettyPrintStr (PascalStringValue t) = prettyPrintStr t
+  prettyPrintStr (PascalIntegerValue t) = prettyPrintStr t
+  prettyPrintStr (PascalRealValue t) = prettyPrintStr t
+  prettyPrintStr (PascalBooleanValue t) = prettyPrintStr t
+  prettyPrintStr (PascalCharValue t) = "'" ++ prettyPrintStr t ++ "'"
 
-instance PrettyPrinterable VarDeclPart where
-  prettyPrint varDeclPart = "\nvar" ++ varDecls
-    where
-      varDecls = case varDeclPartDecls varDeclPart of
-        [] -> ""
-        [v] -> ' ' : prettyPrint v
-        vs -> prettyPrintElemsWithTab vs
+instance PrettyPrintableStr PascalType where
+  prettyPrintStr PascalString = "string"
+  prettyPrintStr PascalInteger = "integer"
+  prettyPrintStr PascalReal = "real"
+  prettyPrintStr PascalBoolean = "boolean"
+  prettyPrintStr PascalChar = "char"
+  prettyPrintStr PascalVoid = ""
 
-instance PrettyPrinterable VariableDeclaration where
-  prettyPrint c = unwords [ident ++ ":", pasType ++ ";"]
-    where
-      ident = intercalate ", " $ map prettyPrint $ variableDeclarationIdents c
-      pasType = prettyPrint $ variableDeclarationType c
+instance PrettyPrintableStr Increment where
+  prettyPrintStr To = "to"
+  prettyPrintStr DownTo = "downTo"
 
-instance PrettyPrinterable ProcedureOrFunctionDeclaration where
-  prettyPrint decl = concat [funcOrProc, ident, params, returnType, prettyPrint $ functionBlock decl, ";"]
-    where
-      ident = prettyPrint ident
-      params = prettyPrint params
-      (funcOrProc, returnType) = case functionReturnType decl of
-        PascalVoid -> ("\nprocedure ", "")
-        otherType -> ("\nfunction", ':' : ' ' : prettyPrint otherType)
+instance (PrettyPrintable a) => PrettyPrintable [a] where
+  prettyPrint = join . map prettyPrint
 
-instance
+instance (PrettyPrintableStr a) => PrettyPrintableStr [a] where
+  prettyPrintStr = concatMap (('\n' :) . prettyPrintStr)
 
-printStatement :: Statement
-pprintStatement s = isCompound s ? prettyPrint s ++ ";" :? prettyPrintWithTab s  
+instance PrettyPrintableStr Char where
+  prettyPrintStr c = [c]
 
-instance PrettyPrinterable Statement where
-  prettyPrint (AssignmentStmt ident expr) = unwords ['\n' : prettyPrint ident, ":=", prettyPrint expr, ";"]
-  prettyPrint (ProcedureStmt ident params) = concat ['\n' : ident, prettyPrint params, ";"]
-  prettyPrint (CompoundStatement stmts) = concat ["\nbegin", prettyPrintElemsWithTab stmts, "\nend"]
-  prettyPrint (IfStatement expr succStmt unsuccStmt) =
-    concat ["\nif ", prettyPrint expr, " then", pprintSucc succStmt, unsucc, semi]
-      where
-        pprintSucc   = isCompound succStmt ? prettyPrint :? prettyPrintWithTab
-        pprintUnsucc = isEmpty unsuccStmt ? prettyPrint :? isCompound unsuccStmt ? "\nelse" prettyPrint :? prettyPrintWithTab 
-        semi = isEmpty unsuccStmt ? (isCompound succStmt ? ";" :? "") :? (isCompound unsuccStmt ? ";" :? "")
-  prettyPrint (ForStatement indent exprFrom incr exprTo stmt) = 
-    unwords ["\nfor", prettyPrint ident, ":=", prettyPrint exprFrom, prettyPrint inc, prettyPrint exprTo, "do", pprintStatement stmt]      
-  prettyPrint (WhileStatement expr stmt) = "\nwhile " ++ prettyPrint expr ++ pprintStatement stmt
-  prettyPrint (RepeatStatement stmts expr) = "\nrepeat"
-  prettyPrint EmptyStatement = ""
+instance PrettyPrintableStr Int where
+  prettyPrintStr i = show i
 
+instance PrettyPrintableStr Double where
+  prettyPrintStr d = show d
 
-instance PrettyPrinterable PascalTypedValue where
-  prettyPrint (PascalStringValue t) = prettyPrint t
-  prettyPrint (PascalIntegerValue t) = prettyPrint t
-  prettyPrint (PascalRealValue t) = prettyPrint t
-  prettyPrint (PascalBooleanValue t) = prettyPrint t
-  prettyPrint (PascalCharValue t) = "'" ++ prettyPrint t ++ "'"
-
-instance PrettyPrinterable PascalType where
-  prettyPrint PascalString = "string"
-  prettyPrint PascalInteger = "integer"
-  prettyPrint PascalReal = "real"
-  prettyPrint PascalBoolean = "boolean"
-  prettyPrint PascalChar = "char"
-  prettyPrint PascalVoid = ""
-
-instance PrettyPrinterable Increment where
-  prettyPrint To = "to"
-  prettyPrint DownTo = "downTo"
-
-instance (PrettyPrinterable a) => PrettyPrinterable [a] where
-  prettyPrint = concatMap prettyPrint
-
-instance PrettyPrinterable Char where
-  prettyPrint c = [c]
-
-instance PrettyPrinterable Int where
-  prettyPrint = show
-
-instance PrettyPrinterable Double where
-  prettyPrint = show
-
-instance PrettyPrinterable Bool where
-  prettyPrint = map toLower . show
+instance PrettyPrintableStr Bool where
+  prettyPrintStr b = map toLower $ show b

@@ -47,8 +47,6 @@ tokens :-
     $f $o $r                                        { \_ -> ForToken }
     $t $o                                           { \_ -> ToToken }
     $d $o $w $n $t $o                               { \_ -> DownToToken }
-    $r $e $p $e $a $t                               { \_ -> RepeatToken }
-    $u $n $t $i $l                                  { \_ -> UntilToken }
     $i $f                                           { \_ -> IfToken }
     $t $h $e $n                                     { \_ -> ThenToken }
     $e $l $s $e                                     { \_ -> ElseToken }
@@ -96,7 +94,6 @@ data Token =  ProgramToken | BeginToken | EndToken
   | FunctionToken | ProcedureToken | VarToken | AssignToken
   | WhileToken | DoToken
   | ForToken | ToToken | DownToToken
-  | RepeatToken | UntilToken
   | IfToken | ThenToken | ElseToken
   | BooleanToken | TrueValToken | FalseValToken
   | StringToken  | StringValToken String
