@@ -74,23 +74,23 @@ import Control.Monad.Except
 %%
 
 Program
-    : ProgramHeading Block '.'								{ Program $1 $2 }
+    : ProgramHeading Block '.'						{ Program $1 $2 }
 
 ProgramHeading
-    : PROGRAM IDENTIFIER ';'								{ $2 }
+    : PROGRAM IDENTIFIER ';'						{ $2 }
 
 Block
-    : BEGIN Statements END									{ SimpleBlock $2 }
-    | ConstantDefParts Block								{ BlockWithConst $1 $2 }
-    | VarDeclParts Block									{ BlockWithVar $1 $2 }
-    | ProcedureAndFunctionDeclParts Block					{ BlockWithFunc $1 $2 }
+    : BEGIN Statements END							{ SimpleBlock $2 }
+    | ConstantDefParts Block						{ BlockWithConst $1 $2 }
+    | VarDeclParts Block							{ BlockWithVar $1 $2 }
+    | ProcedureAndFunctionDeclParts Block 			{ BlockWithFunc $1 $2 }
 
 ConstantDefParts
-    : {- empty -}                     						{ [] }
-    | ConstantDefPart ConstantDefParts						{ $1 : $2 }
+    : {- empty -}                     				{ [] }
+    | ConstantDefPart ConstantDefParts				{ $1 : $2 }
 
 ConstantDefPart
-	: CONST ConstantDefinitions                  			{ ConstantDefPart $2 }
+	: CONST ConstantDefinitions                  	{ ConstantDefPart $2 }
 
 ConstantDefinitions
 	: ConstantDefinition ';'						{ [$1] }
@@ -135,25 +135,26 @@ ProcedureAndFunctionDeclParts
 
 ProcedureAndFunctionDeclPart
     : ProcedureDeclaration ';'												{ $1 }
-    | FunctionDeclaration													{ $1 }
+    | FunctionDeclaration  ';'													{ $1 }
 
 ProcedureDeclaration
-	: PROCEDURE IDENTIFIER ';' Block										{ ProcedureOrFunctionDeclaration $2 [] PascalVoid $4 }
+	: PROCEDURE IDENTIFIER ';' Block										{ ProcedureOrFunctionDeclaration $2 (ParameterSection []) PascalVoid $4 }
 	| PROCEDURE IDENTIFIER ParameterSection ';' Block						{ ProcedureOrFunctionDeclaration $2 $3 PascalVoid $5 }
 
+
 FunctionDeclaration
-   : FUNCTION IDENTIFIER ':' TypeIdentifier ';' Block						{ ProcedureOrFunctionDeclaration $2 [] $4 $6 }
+   : FUNCTION IDENTIFIER ':' TypeIdentifier ';' Block						{ ProcedureOrFunctionDeclaration $2 (ParameterSection []) $4 $6 }
    | FUNCTION IDENTIFIER ParameterSection ':' TypeIdentifier ';' Block		{ ProcedureOrFunctionDeclaration $2 $3 $5 $7 }
 
 ParameterSection
-	: '(' ParameterList ')'					{ $2 }
+	: '(' ParameterList ')'					{ ParameterSection $2 }
 
 ParameterList
 	: Parameter 							{ [$1] }
 	| Parameter ';' ParameterList			{ $1 : $3 }
 
 Parameter
-	: IdentifierList ':' TypeIdentifier		{ VariableDeclaration $1 $3 }
+	: IdentifierList ':' TypeIdentifier		{ Parameter $1 $3 }
 
 Statements
     : Statement								{ Statements [$1] }
@@ -175,8 +176,12 @@ Variable
 	: IDENTIFIER								{ $1 }
 
 ProcedureStatement
-	: IDENTIFIER								{ ProcedureStmt $1 [] }
-	| IDENTIFIER '(' ParameterSection ')'		{ ProcedureStmt $1 $3 }
+	: IDENTIFIER								{ ProcedureStmt $1 (ParamList []) }
+	| IDENTIFIER '(' ParamList ')'				{ ProcedureStmt $1 $3 }
+
+ParamList
+	: Expression								{ ParamList [$1] }
+    | Expression ',' ParamList					{ ParamList ($1 : paramListParams $3) }
 
 Expression
     : Expression '+' Expression		{ ExprPlus $1 $3 }
@@ -206,7 +211,7 @@ Bool
 	| FALSE							{ ExprVal (PascalBooleanValue False) }
 
 FunctionDesignator
-	: IDENTIFIER '(' ParameterSection ')'			{ ExprFunctionDesignator $1 $3 }
+	: IDENTIFIER '(' ParamList ')'			{ ExprFunctionDesignator $1 $3 }
 
 IfStatement
     : IF Expression THEN Statement                  { IfStatement $2 $4 EmptyStatement }
@@ -226,6 +231,6 @@ IdentifierList
 
 {
 parseError :: [Token] -> Except String a
-parseError (l:ls) = throwError $ "Unexpected token: " ++ (show l)
+parseError (l:ls) = throwError $ "Unexpected token: " ++ (show l) ++ " before " ++ show ( ls)
 parseError [] = throwError "Unexpected EOF"
 }

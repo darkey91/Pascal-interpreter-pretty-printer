@@ -1,4 +1,4 @@
-module PrettyPrinter where
+module PrettyPrinter (pprintCode) where
 
 import Control.Monad (join)
 import Data.Char (toLower)
@@ -6,9 +6,8 @@ import Data.List (intercalate)
 import Parser.PascalGrammar
 import Utils
 
-addSuffixToLastStr :: String -> [String] -> [String]
-addSuffixToLastStr _ [] = []
-addSuffixToLastStr c ss = init ss ++ [last ss ++ c]
+pprintCode :: Program -> String
+pprintCode = prettyPrintStr
 
 class PrettyPrintable p where
   prettyPrint :: p -> [String]
@@ -19,20 +18,8 @@ class PrettyPrintable p where
 class PrettyPrintableStr p where
   prettyPrintStr :: p -> String
 
-  prettyPrintMapped :: (String -> String) -> p -> String
-  prettyPrintMapped f = f . prettyPrintStr
-
-  prettyPrintWithSemi :: p -> String
-  prettyPrintWithSemi = prettyPrintMapped (++ ";")
-
   prettyPrintStrWithQuotes :: p -> String
-  prettyPrintStrWithQuotes = prettyPrintMapped (\s -> "'" ++ s ++ "'")
-
-  prettyPrintStrWithTab :: p -> String
-  prettyPrintStrWithTab = prettyPrintMapped ('\t' :)
-
-  prettyPrintStrsWithTab :: [p] -> String
-  prettyPrintStrsWithTab = concatMap prettyPrintStrWithTab
+  prettyPrintStrWithQuotes = (\s -> "'" ++ s ++ "'") . prettyPrintStr
 
   pprintStringsWithTab :: [p] -> [String]
   pprintStringsWithTab = map (\c -> '\t' : prettyPrintStr c)
@@ -42,6 +29,11 @@ instance PrettyPrintable Program where
     let programHeading = "program " ++ programIdent p ++ ";"
     let body = addSuffixToLastStr "." $ prettyPrint $ programBlock p
     programHeading : body
+
+instance PrettyPrintableStr Program where
+  prettyPrintStr prog = case prettyPrint prog of
+    [] -> ""
+    (p : ps) -> p ++ concatMap ('\n' :) ps
 
 instance PrettyPrintable Block where
   prettyPrint (SimpleBlock stmts) = "begin" : pprintWithTab stmts ++ ["end"]
@@ -75,9 +67,9 @@ instance PrettyPrintable ProcedureOrFunctionDeclaration where
   prettyPrint fDecl = do
     let params = prettyPrintStr $ functionParameters fDecl
     let (funcOrProc, returnType) = case functionReturnType fDecl of
-          PascalVoid -> ("\nprocedure ", "")
-          otherType -> ("\nfunction", ':' : ' ' : prettyPrintStr otherType)
-    (funcOrProc ++ functionIdent fDecl ++ params ++ returnType) : prettyPrint (functionBlock fDecl)
+          PascalVoid -> ("procedure ", "")
+          otherType -> ("function ", ':' : ' ' : prettyPrintStr otherType)
+    (funcOrProc ++ functionIdent fDecl ++ params ++ returnType ++ ";") : addSuffixToLastStr ";" (prettyPrint (functionBlock fDecl))
 
 instance PrettyPrintable Statements where
   prettyPrint stmts = case statements stmts of
@@ -101,11 +93,19 @@ instance PrettyPrintable Statement where
     forHeader : pprintStatement stmt
   prettyPrint (IfStatement expr succStmt unsuccStmt) = do
     let ifHeader = "if " ++ prettyPrintStr expr ++ " then"
-    let succCase = (isCompound succStmt ? prettyPrint :? pprintWithTab) succStmt
+    let succCase = pprintStatement succStmt
     let unsuccCase = case unsuccStmt of
           EmptyStatement -> []
           other -> "else" : pprintStatement other
     ifHeader : succCase ++ succCase ++ unsuccCase
+
+instance PrettyPrintableStr ParamList where
+  prettyPrintStr p = '(' : intercalate ", " (map prettyPrintStr $ paramListParams p) ++ ")"
+
+instance PrettyPrintableStr ParameterSection where
+  prettyPrintStr p = case parameterSectionParams p of
+   [] -> ""
+   ps -> '(' : intercalate ", " (map prettyPrintStr ps) ++ ")"
 
 instance PrettyPrintableStr Expr where
   prettyPrintStr (ExprBracketed expr) = '(' : prettyPrintStr expr ++ ")"
@@ -126,20 +126,26 @@ instance PrettyPrintableStr Expr where
   prettyPrintStr (ExprOr l r) = prettyPrintStr l ++ " or " ++ prettyPrintStr r
   prettyPrintStr (ExprNot expr) = "not " ++ prettyPrintStr expr
   prettyPrintStr (ExprVar str) = str
-  prettyPrintStr (ExprFunctionDesignator str params) = str ++ "(" ++ prettyPrintStr params ++ ")"
+  prettyPrintStr (ExprFunctionDesignator str params) = str ++ prettyPrintStr params
+
+instance PrettyPrintableStr Parameter where
+  prettyPrintStr p = do
+    let idents = intercalate ", " $ paramIdents p
+    let pasType = prettyPrintStr $ paramType p
+    idents ++ ": " ++ pasType
 
 instance PrettyPrintableStr VariableDeclaration where
-  prettyPrintStr c = unwords [ident ++ ":", pasType ++ ";"]
-    where
-      ident = intercalate ", " $ map prettyPrintStr $ variableDeclarationIdents c
-      pasType = prettyPrintStr $ variableDeclarationType c
-
+  prettyPrintStr v = do
+    let idents = intercalate ", " $ variableDeclarationIdents v
+    let pasType = prettyPrintStr $ variableDeclarationType v
+    idents ++ ": " ++ pasType ++ ";"
+  
 instance PrettyPrintableStr PascalTypedValue where
-  prettyPrintStr (PascalStringValue t) = prettyPrintStr t
+  prettyPrintStr (PascalStringValue t) = t
   prettyPrintStr (PascalIntegerValue t) = prettyPrintStr t
   prettyPrintStr (PascalRealValue t) = prettyPrintStr t
   prettyPrintStr (PascalBooleanValue t) = prettyPrintStr t
-  prettyPrintStr (PascalCharValue t) = "'" ++ prettyPrintStr t ++ "'"
+  prettyPrintStr (PascalCharValue t) = "'" ++ [t] ++ "'"
 
 instance PrettyPrintableStr PascalType where
   prettyPrintStr PascalString = "string"
@@ -156,9 +162,6 @@ instance PrettyPrintableStr Increment where
 instance (PrettyPrintable a) => PrettyPrintable [a] where
   prettyPrint = join . map prettyPrint
 
-instance (PrettyPrintableStr a) => PrettyPrintableStr [a] where
-  prettyPrintStr = concatMap (('\n' :) . prettyPrintStr)
-
 instance PrettyPrintableStr Char where
   prettyPrintStr c = [c]
 
@@ -170,3 +173,7 @@ instance PrettyPrintableStr Double where
 
 instance PrettyPrintableStr Bool where
   prettyPrintStr b = map toLower $ show b
+
+addSuffixToLastStr :: String -> [String] -> [String]
+addSuffixToLastStr _ [] = []
+addSuffixToLastStr c ss = init ss ++ [last ss ++ c]

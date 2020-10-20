@@ -5,6 +5,7 @@ module Parser.PascalGrammar
     Block (..),
     Statements(..),
     Statement (..),
+    ParamList(..),
     Constant (..),
     ConstantDefParts,
     ConstantDefPart(..),
@@ -13,8 +14,8 @@ module Parser.PascalGrammar
     VariableDeclaration (..),
     ProcedureAndFunctionDeclParts,
     ProcedureOrFunctionDeclaration (..),
-    ParameterSection,
-    Parameter,
+    ParameterSection(..),
+    Parameter(..),
     PascalType (..),
     PascalTypedValue (..),
     Increment (..),
@@ -52,7 +53,7 @@ data Constant = Constant
 
 type VarDeclParts = [VarDeclPart]
 
-newtype VarDeclPart = VarDeclPart { varDeclPartDecls :: [VariableDeclaration]}
+newtype VarDeclPart = VarDeclPart { varDeclPartDecls :: [VariableDeclaration] }
   deriving (Eq, Show)
 
 data VariableDeclaration = VariableDeclaration
@@ -71,9 +72,14 @@ data ProcedureOrFunctionDeclaration = ProcedureOrFunctionDeclaration
   }
   deriving (Eq, Show)
 
-type ParameterSection = [Parameter]
+newtype ParameterSection = ParameterSection { parameterSectionParams :: [Parameter] }
+  deriving (Eq, Show)
 
-type Parameter = VariableDeclaration
+data Parameter = Parameter 
+  { paramIdents :: [VariableIdent],
+    paramType :: PascalType
+  }
+  deriving (Eq, Show)
 
 data PascalType = PascalString | PascalInteger | PascalReal | PascalBoolean | PascalChar | PascalVoid
   deriving (Eq, Show)
@@ -95,12 +101,15 @@ type UnsuccessfulCase = Statement
 
 data Statement
   = AssignmentStmt Identifier Expr
-  | ProcedureStmt Identifier ParameterSection
+  | ProcedureStmt Identifier ParamList
   | CompoundStatement Statements
   | IfStatement Expr SuccessfulCase UnsuccessfulCase
   | ForStatement Identifier Expr Increment Expr Statement
   | WhileStatement Expr Statement
   | EmptyStatement
+  deriving (Eq, Show)
+
+newtype ParamList = ParamList { paramListParams :: [Expr] }
   deriving (Eq, Show)
   
 isCompound :: Statement -> Bool
@@ -139,23 +148,9 @@ data Expr
   | ExprOr Expr Expr
   | ExprNot Expr
   | ExprVar String
-  | ExprFunctionDesignator String ParameterSection
+  | ExprFunctionDesignator String ParamList
   deriving (Eq, Show)
 
---todo think about concatenation
---data Expr a where
---  ExprBracketed :: Expr a -> Expr a
---  ExprNumVal :: (Num a) => PascalTypedValue a -> Expr a
---  ExprBoolVal :: Bool -> Expr Bool
---  ExprNeg :: (Num a) => Expr a -> Expr a
---  ExprPlus :: (Num a) => Expr a -> Expr a -> Expr a
---  ExprMinus :: (Num a) => Expr a -> Expr a -> Expr a
---  ExprMul :: (Num a) => Expr a -> Expr a -> Expr a
---  ExprDiv :: (Fractional a) => Expr a -> Expr a -> Expr a
---  ExprIntDiv :: (Integral a) => Expr a -> Expr a -> Expr a
---  ExprAnd :: Expr Bool -> Expr Bool -> Expr Bool
---  ExprOr :: Expr Bool -> Expr Bool -> Expr Bool
---  ExprNot :: Expr Bool -> Expr Bool
 
 --newtype Interp a = Interp { runInterp :: Store -> Either String (a, Store) }
 --

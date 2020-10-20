@@ -85,7 +85,7 @@ tokens :-
     \< \=                                           { \_ -> LEToken }
     $digit+                                         { \s -> IntegerValToken (read s) }
     $digit+ \. $digit+                              { \s -> RealValToken (read s) }
-    $alpha ([a-za-z0-9_])*                          { \s -> IdentifierToken s}
+    $alpha ([a-zA-Z0-9_])*                          { \s -> IdentifierToken s}
     \' (\'\' | ~[\'])* \'                           { \s -> StringValToken s }
 
 {

@@ -39,6 +39,7 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - interp
+    - pretty-simple
 
 tests:
   interp-test:
