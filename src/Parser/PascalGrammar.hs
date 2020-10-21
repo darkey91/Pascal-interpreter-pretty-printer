@@ -160,6 +160,3 @@ data Expr
 --               Left msg      -> Left msg
 --               Right (x, r') -> runInterp (k x) r'
 --  fail msg = Interp $ \_ -> Left msg
-
---		| IDENTIFIER '=' IDENTIFIER					{ Constant $1 $3 True False }
---  	| IDENTIFIER '=' '-' IDENTIFIER				{ Constant $1 $4 True True}

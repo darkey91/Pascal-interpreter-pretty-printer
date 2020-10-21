@@ -3,65 +3,66 @@ module Parser.PascalParser where
 import Parser.PascalLexer
 import Parser.PascalGrammar
 import Control.Monad.Except
+import Parser.ParseResult
 }
 
 %name       parsePascalCode
 %tokentype  { Token }
 %error      { parseError }
-%monad { Except String } { (>>=) } { return }
+%monad { ParseResult } { thenR } { returnR }
 
 %token
-	PROGRAM			{ ProgramToken }
-	BEGIN			{ BeginToken }
-	END				{ EndToken }
-    IDENTIFIER      { IdentifierToken $$ }
-    FUNCTION        { FunctionToken }
-    PROCEDURE       { ProcedureToken }
-    VAR             { VarToken }
-    ASSIGN          { AssignToken }
-    WHILE           { WhileToken }
-    DO              { DoToken }
-    FOR             { ForToken }
-    TO              { ToToken }
-    DOWNTO          { DownToToken }
-    IF              { IfToken }
-    THEN            { ThenToken }
-    ELSE            { ElseToken }
-    BOOLEAN		    { BooleanToken }
-    TRUE            { TrueValToken }
-    FALSE		    { FalseValToken }
-    STRING			{ StringToken }
-    STRING_VALUE    { StringValToken $$ }
-    INTEGER		    { IntegerToken }
-    INTEGER_VALUE   { IntegerValToken $$ }
-    REAL	        { RealToken }
-    REAL_VALUE      { RealValToken $$ }
-    CONST           { ConstToken }
-    CHAR            { CharToken }
-    AND             { AndToken }
-    OR              { OrToken }
-    NOT             { NotToken }
-    '+'             { PlusToken }
-    '-'             { MinusToken }
-    '*'             { StarToken }
-    '/'             { SlashToken }
-    MOD             { ModToken }
-    DIV             { DivToken }
-    '('             { LParenToken }
-    ')'             { RParenToken }
-    '['             { LBracketToken }
-    ']'             { RBracketToken }
-    '.'             { DotToken }
-    '..'            { DotDotToken }
-    ','             { CommaToken }
-    ';'             { SemiToken }
-    ':'             { ColonToken }
-    '='             { EQToken }
-    '<>'            { NEQToken }
-    '>'             { GTToken }
-    '<'             { LTToken }
-    '>='            { GEToken }
-    '<='            { LEToken }
+	PROGRAM			{ Token ProgramToken _ _ _ }
+	BEGIN			{ Token BeginToken _ _ _ }
+	END				{ Token EndToken _ _ _ }
+    IDENTIFIER      { Token IdentifierToken _ _ $$ }
+    FUNCTION        { Token FunctionToken _ _ _ }
+    PROCEDURE       { Token ProcedureToken _ _ _ }
+    VAR             { Token VarToken _ _ _ }
+    ASSIGN          { Token AssignToken _ _ _ }
+    WHILE           { Token WhileToken _ _ _ }
+    DO              { Token DoToken _ _ _ }
+    FOR             { Token ForToken _ _ _ }
+    TO              { Token ToToken _ _ _ }
+    DOWNTO          { Token DownToToken _ _ _ }
+    IF              { Token IfToken _ _ _ }
+    THEN            { Token ThenToken _ _ _ }
+    ELSE            { Token ElseToken _ _ _ }
+    BOOLEAN		    { Token BooleanToken _ _ _ }
+    TRUE            { Token TrueValToken _ _ _ }
+    FALSE		    { Token FalseValToken _ _ _ }
+    STRING			{ Token StringToken _ _ _ }
+    STRING_VALUE    { Token StringValToken _ _ $$ }
+    INTEGER		    { Token IntegerToken _ _ _ }
+    INTEGER_VALUE   { Token IntegerValToken _ _ $$ }
+    REAL	        { Token RealToken _ _ _ }
+    REAL_VALUE      { Token RealValToken _ _ $$ }
+    CONST           { Token ConstToken _ _ _ }
+    CHAR            { Token CharToken _ _ _ }
+    AND             { Token AndToken _ _ _ }
+    OR              { Token OrToken _ _ _ }
+    NOT             { Token NotToken _ _ _ }
+    '+'             { Token PlusToken _ _ _ }
+    '-'             { Token MinusToken _ _ _ }
+    '*'             { Token StarToken _ _ _ }
+    '/'             { Token SlashToken _ _ _ }
+    MOD             { Token ModToken _ _ _ }
+    DIV             { Token DivToken _ _ _ }
+    '('             { Token LParenToken _ _ _ }
+    ')'             { Token RParenToken _ _ _ }
+    '['             { Token LBracketToken _ _ _ }
+    ']'             { Token RBracketToken _ _ _ }
+    '.'             { Token DotToken _ _ _ }
+    '..'            { Token DotDotToken _ _ _ }
+    ','             { Token CommaToken _ _ _ }
+    ';'             { Token SemiToken _ _ _ }
+    ':'             { Token ColonToken _ _ _ }
+    '='             { Token EQToken _ _ _ }
+    '<>'            { Token NEQToken _ _ _ }
+    '>'             { Token GTToken _ _ _ }
+    '<'             { Token LTToken _ _ _ }
+    '>='            { Token GEToken _ _ _ }
+    '<='            { Token LEToken _ _ _ }
 
 %left OR
 %left AND
@@ -102,8 +103,8 @@ ConstantDefinition
 	| IDENTIFIER '=' StringValue				{ Constant $1 $3 False False}
 
 UnsignedNumber
-	: REAL_VALUE									{ PascalRealValue $1 }
-	| INTEGER_VALUE									{ PascalIntegerValue $1 }
+	: REAL_VALUE									{ PascalRealValue $ read $1 }
+	| INTEGER_VALUE									{ PascalIntegerValue $ read $1 }
 
 StringValue
 	: STRING_VALUE								{ PascalStringValue $1 }
@@ -227,10 +228,3 @@ ForStatement
 IdentifierList
 	: IDENTIFIER						{ [$1] }
 	| IDENTIFIER ',' IdentifierList		{ $1 : $3 }
-
-
-{
-parseError :: [Token] -> Except String a
-parseError (l:ls) = throwError $ "Unexpected token: " ++ (show l) ++ " before " ++ show ( ls)
-parseError [] = throwError "Unexpected EOF"
-}

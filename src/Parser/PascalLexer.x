@@ -2,7 +2,7 @@
 module Parser.PascalLexer where
 }
 
-%wrapper "basic"
+%wrapper "posn"
 
 $alpha      = [a-zA-Z]
 $digit      = 0-9
@@ -36,69 +36,83 @@ $z          = [zZ]
 tokens :-
     $white+                                         ;
     "{".*"}"                                        ;
-    $p $r $o $g $r $a $m                            { \_ -> ProgramToken }
-    $b $e $g $i $n                                  { \_ -> BeginToken }
-    $e $n $d                                        { \_ -> EndToken }
-    $f $u $n $c $t $i $o $n                         { \_ -> FunctionToken }
-    $p $r $o $c $e $d $u $r $e                      { \_ -> ProcedureToken }
-    $v $a $r                                        { \_ -> VarToken }
-    $w $h $i $l $e                                  { \_ -> WhileToken }
-    $d $o                                           { \_ -> DoToken }
-    $f $o $r                                        { \_ -> ForToken }
-    $t $o                                           { \_ -> ToToken }
-    $d $o $w $n $t $o                               { \_ -> DownToToken }
-    $i $f                                           { \_ -> IfToken }
-    $t $h $e $n                                     { \_ -> ThenToken }
-    $e $l $s $e                                     { \_ -> ElseToken }
-    $b $o $o $l $e $a $n                            { \_ -> BooleanToken }
-    $t $r $u $e                                     { \_ -> TrueValToken }
-    $f $a $l $s $e                                  { \_ -> FalseValToken }
-    $s $t $r $i $n $g                               { \_ -> StringToken }
-    $i $n $t $e $g $e $r                            { \_ -> IntegerToken }
-    $r $e $a $l                                     { \_ -> RealToken }
-    $c $o $n $s $t                                  { \_ -> ConstToken }
-    $c $h $a $r                                     { \_ -> CharToken }
-    $a $n $d                                        { \_ -> AndToken }
-    $o $r                                           { \_ -> OrToken }
-    $n $o $t                                        { \_ -> NotToken }
-    $m $o $d                                        { \_ -> ModToken }
-    $d $i $v                                        { \_ -> DivToken }
-    \: \=                                           { \_ -> AssignToken }
-    \+                                              { \_ -> PlusToken }
-    \-                                              { \_ -> MinusToken }
-    \*                                              { \_ -> StarToken }
-    \/                                              { \_ -> SlashToken }
-    \(                                              { \_ -> LParenToken }
-    \)                                              { \_ -> RParenToken }
-    \[                                              { \_ -> LBracketToken }
-    \]                                              { \_ -> RBracketToken }
-    \.                                              { \_ -> DotToken }
-    \. \.                                           { \_ -> DotDotToken }
-    \,                                              { \_ -> CommaToken }
-    \:                                              { \_ -> ColonToken }
-    \;                                              { \_ -> SemiToken }
-    \=                                              { \_ -> EQToken }
-    \< \>                                           { \_ -> NEQToken }
-    \<                                              { \_ -> LTToken }
-    \>                                              { \_ -> GTToken }
-    \> \=                                           { \_ -> GEToken }
-    \< \=                                           { \_ -> LEToken }
-    $digit+                                         { \s -> IntegerValToken (read s) }
-    $digit+ \. $digit+                              { \s -> RealValToken (read s) }
-    $alpha ([a-zA-Z0-9_])*                          { \s -> IdentifierToken s}
-    \' (\'\' | ~[\'])* \'                           { \s -> StringValToken s }
+    $p $r $o $g $r $a $m                            { tokenize ProgramToken }
+    $b $e $g $i $n                                  { tokenize BeginToken }
+    $e $n $d                                        { tokenize EndToken }
+    $f $u $n $c $t $i $o $n                         { tokenize FunctionToken }
+    $p $r $o $c $e $d $u $r $e                      { tokenize ProcedureToken }
+    $v $a $r                                        { tokenize VarToken }
+    $w $h $i $l $e                                  { tokenize WhileToken }
+    $d $o                                           { tokenize DoToken }
+    $f $o $r                                        { tokenize ForToken }
+    $t $o                                           { tokenize ToToken }
+    $d $o $w $n $t $o                               { tokenize DownToToken }
+    $i $f                                           { tokenize IfToken }
+    $t $h $e $n                                     { tokenize ThenToken }
+    $e $l $s $e                                     { tokenize ElseToken }
+    $b $o $o $l $e $a $n                            { tokenize BooleanToken }
+    $t $r $u $e                                     { tokenize TrueValToken }
+    $f $a $l $s $e                                  { tokenize FalseValToken }
+    $s $t $r $i $n $g                               { tokenize StringToken }
+    $i $n $t $e $g $e $r                            { tokenize IntegerToken }
+    $r $e $a $l                                     { tokenize RealToken }
+    $c $o $n $s $t                                  { tokenize ConstToken }
+    $c $h $a $r                                     { tokenize CharToken }
+    $a $n $d                                        { tokenize AndToken }
+    $o $r                                           { tokenize OrToken }
+    $n $o $t                                        { tokenize NotToken }
+    $m $o $d                                        { tokenize ModToken }
+    $d $i $v                                        { tokenize DivToken }
+    \: \=                                           { tokenize AssignToken }
+    \+                                              { tokenize PlusToken }
+    \-                                              { tokenize MinusToken }
+    \*                                              { tokenize StarToken }
+    \/                                              { tokenize SlashToken }
+    \(                                              { tokenize LParenToken }
+    \)                                              { tokenize RParenToken }
+    \[                                              { tokenize LBracketToken }
+    \]                                              { tokenize RBracketToken }
+    \.                                              { tokenize DotToken }
+    \. \.                                           { tokenize DotDotToken }
+    \,                                              { tokenize CommaToken }
+    \:                                              { tokenize ColonToken }
+    \;                                              { tokenize SemiToken }
+    \=                                              { tokenize EQToken }
+    \< \>                                           { tokenize NEQToken }
+    \<                                              { tokenize LTToken }
+    \>                                              { tokenize GTToken }
+    \> \=                                           { tokenize GEToken }
+    \< \=                                           { tokenize LEToken }
+    $digit+                                         { tokenize IntegerValToken }
+    $digit+ \. $digit+                              { tokenize RealValToken }
+    $alpha ([a-zA-Z0-9_])*                          { tokenize IdentifierToken }
+    \' (\'\' | ~[\'])* \'                           { tokenize StringValToken  }
 
 {
-data Token =  ProgramToken | BeginToken | EndToken
-  | IdentifierToken String
+-- Each right-hand side has type :: AlexPosn -> String -> Token
+
+-- data AlexPosn = AlexPn !Int  -- absolute character offset
+--                        !Int  -- line number
+--                        !Int  -- column number
+
+-- Token creator
+tokenize :: TokenType -> AlexPosn -> String -> Token
+tokenize t (AlexPn _ line col) s = Token { tokenType = t
+                                         , tokenLine = line
+                                         , tokenColumn = col
+                                         , tokenValue = s
+                                         }
+
+data TokenType = ProgramToken | BeginToken | EndToken
+  | IdentifierToken
   | FunctionToken | ProcedureToken | VarToken | AssignToken
   | WhileToken | DoToken
   | ForToken | ToToken | DownToToken
   | IfToken | ThenToken | ElseToken
   | BooleanToken | TrueValToken | FalseValToken
-  | StringToken  | StringValToken String
-  | IntegerToken | IntegerValToken Int
-  | RealToken | RealValToken Double
+  | StringToken  | StringValToken
+  | IntegerToken | IntegerValToken
+  | RealToken | RealValToken
   | ConstToken | CharToken
   | AndToken | OrToken | NotToken
   | PlusToken | MinusToken | StarToken | SlashToken | ModToken | DivToken
@@ -106,4 +120,11 @@ data Token =  ProgramToken | BeginToken | EndToken
   | DotToken | DotDotToken | CommaToken | ColonToken | SemiToken
   | EQToken | NEQToken | LTToken | GTToken | GEToken | LEToken
   deriving (Eq, Show)
+
+data Token = Token
+  { tokenType :: TokenType
+  , tokenLine :: Int
+  , tokenColumn :: Int
+  , tokenValue :: String
+  } deriving (Eq, Show)
 }

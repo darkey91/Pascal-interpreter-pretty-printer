@@ -67,8 +67,8 @@ instance PrettyPrintable ProcedureOrFunctionDeclaration where
   prettyPrint fDecl = do
     let params = prettyPrintStr $ functionParameters fDecl
     let (funcOrProc, returnType) = case functionReturnType fDecl of
-          PascalVoid -> ("procedure ", "")
-          otherType -> ("function ", ':' : ' ' : prettyPrintStr otherType)
+          PascalVoid -> ("\nprocedure ", "")
+          otherType -> ("\nfunction ", ':' : ' ' : prettyPrintStr otherType)
     (funcOrProc ++ functionIdent fDecl ++ params ++ returnType ++ ";") : addSuffixToLastStr ";" (prettyPrint (functionBlock fDecl))
 
 instance PrettyPrintable Statements where
@@ -139,7 +139,7 @@ instance PrettyPrintableStr VariableDeclaration where
     let idents = intercalate ", " $ variableDeclarationIdents v
     let pasType = prettyPrintStr $ variableDeclarationType v
     idents ++ ": " ++ pasType ++ ";"
-  
+
 instance PrettyPrintableStr PascalTypedValue where
   prettyPrintStr (PascalStringValue t) = t
   prettyPrintStr (PascalIntegerValue t) = prettyPrintStr t

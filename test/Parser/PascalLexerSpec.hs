@@ -12,11 +12,11 @@ spec = do
   describe "Lexer tests" $
     do
       it "empty" $ do alexScanTokens "    " `shouldBe` []
-      it "key words" $ do alexScanTokens "while FOR DownTo" `shouldBe` [WhileToken, ForToken, DownToToken]
-      it "sings" $ do alexScanTokens ":= . .." `shouldBe` [AssignToken, DotToken, DotDotToken]
+      it "key words" $ do map tokenType (alexScanTokens "while FOR DownTo") `shouldBe` [WhileToken, ForToken, DownToToken]
+      it "sings" $ do map tokenType (alexScanTokens ":= . ..") `shouldBe` [AssignToken, DotToken, DotDotToken]
       it "integer variable declaration" $ do
         alexScanTokens "var a: Integer;"
-          `shouldBe` [VarToken, IdentifierToken "a", ColonToken, IntegerToken, SemiToken]
+          `shouldBe` [Token VarToken _ _ , IdentifierToken "a", ColonToken, IntegerToken, SemiToken]
       it "boolean variable assign" $ do
         alexScanTokens "a := true"
           `shouldBe` [IdentifierToken "a", AssignToken, TrueValToken]
