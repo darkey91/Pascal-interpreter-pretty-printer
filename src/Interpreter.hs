@@ -9,6 +9,7 @@ import Parser.PascalGrammar
 data Err
   = LogicErr
   | InterpretErr
+  | TypeCastErr
 
 type Scope = Map String Expr
 
