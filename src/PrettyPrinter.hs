@@ -62,7 +62,7 @@ instance PrettyPrintable Statements where
       initPart ++ lastPart
 
 pprintStatement :: Statement -> [String]
-pprintStatement s = (isCompound s ? prettyPrint :? pprintWithTab) s
+pprintStatement s = (isCompoundStmt s ? prettyPrint :? pprintWithTab) s
 
 instance PrettyPrintable Statement where
   prettyPrint (AssignmentStmt ident expr) = [ident ++ " := " ++ prettyPrintStr expr]
@@ -109,6 +109,7 @@ instance PrettyPrintableStr Expr where
   prettyPrintStr (ExprNot expr) = "not " ++ prettyPrintStr expr
   prettyPrintStr (ExprVar str) = str
   prettyPrintStr (ExprFunctionCall str params) = str ++ prettyPrintStr params
+  prettyPrintStr EmptyExpr = ""
 
 instance PrettyPrintableStr Parameter where
   prettyPrintStr p = do
@@ -123,11 +124,12 @@ instance PrettyPrintableStr VariableDeclaration where
     idents ++ ": " ++ pasType ++ ";"
 
 instance PrettyPrintableStr PascalTypedValue where
-  prettyPrintStr (PascalStringValue t) = t
-  prettyPrintStr (PascalIntegerValue t) = prettyPrintStr t
-  prettyPrintStr (PascalRealValue t) = prettyPrintStr t
-  prettyPrintStr (PascalBooleanValue t) = prettyPrintStr t
-  prettyPrintStr (PascalCharValue t) = "'" ++ [t] ++ "'"
+  prettyPrintStr (StringValue t) = t
+  prettyPrintStr (IntegerValue t) = prettyPrintStr t
+  prettyPrintStr (RealValue t) = prettyPrintStr t
+  prettyPrintStr (BooleanValue t) = prettyPrintStr t
+  prettyPrintStr (CharValue t) = "'" ++ [t] ++ "'"
+  prettyPrintStr EmptyValue = "" 
 
 instance PrettyPrintableStr PascalType where
   prettyPrintStr PascalString = "string"

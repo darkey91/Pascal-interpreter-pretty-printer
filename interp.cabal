@@ -36,6 +36,7 @@ library
       Parser.PascalParser
       Parser.ParseResult
       Interpreter
+      Code
   other-modules:
       Paths_interp
   hs-source-dirs:

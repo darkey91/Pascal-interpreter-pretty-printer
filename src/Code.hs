@@ -9,15 +9,31 @@ import Parser.PascalGrammar
 data PascalCodeF next
   = PrintLn String next
   | ReadString (String -> next)
-  | AssignVar Identifier Expr next
+  | Assign Identifier Expr next
   | Empty next
   | While Expr Code next
   | For Identifier Expr Increment Expr Code next
   | If Expr Code Code next
   | Function Identifier ParameterSection PascalType Code next
   | Expression Expr next
-  | VDeclaration Identifier PascalType
+  | VDeclaration Identifier PascalType next
   deriving (Functor)
+
+
+--todo remove
+showProgram :: Show r => Free PascalCodeF r -> String 
+showProgram  (Free (PrintLn str next)) = "println " ++ str ++ "\n" ++ showProgram next
+showProgram  (Free (ReadString f)) = "AAAAA" 
+showProgram  (Free (Assign ident expr next)) = "assign " ++ "\n" ++ showProgram next  
+showProgram  (Free (Empty next)) = "empty\n" ++ showProgram next  
+showProgram  (Free (While expr code next)) = "while\n" ++ showProgram next 
+showProgram  (Free (For identifier exprFrom increment exprTo code next)) = "for\n" ++ showProgram next 
+showProgram  (Free (If expr succCode unsuccCode next)) = "if\n" ++ showProgram next 
+showProgram  (Free (Function udentifier parameterSection pascalType code next)) = "funcDecl\n" ++ showProgram next 
+showProgram  (Free (Expression expr next)) = "expr " ++ show expr ++ "\n" ++ showProgram next 
+showProgram  (Free (VDeclaration identifier pascaltype next )) = "vdecl\n" ++ showProgram next  
+showProgram (Pure a) = show a
+   
 
 data Free f a
   = Pure a
@@ -43,7 +59,7 @@ instance CodeConverter Block where
       convert block
 
 instance CodeConverter VariableDeclaration where
-  convert vDecl = mapM_ (\ident -> liftF $ VDeclaration ident vType) idents
+  convert vDecl = mapM_ (\ident -> liftF $ VDeclaration ident vType ()) idents
     where
       idents = variableDeclarationIdents vDecl
       vType = variableDeclarationType vDecl
@@ -57,7 +73,7 @@ instance CodeConverter ProcedureOrFunctionDeclaration where
       block = functionBlock fDecl
 
 instance CodeConverter Statement where
-  convert (AssignmentStmt ident expr) = liftF $ AssignVar ident expr ()
+  convert (AssignmentStmt ident expr) = liftF $ Assign ident expr ()
   convert (ProcedureStmt ident paramList) = liftF $ Expression (ExprFunctionCall ident paramList) ()
   convert (CompoundStatement stmts) = convert $ statements stmts
   convert (IfStatement expr succStmt unsuccStmt) = liftF $ If expr (convert succStmt) (convert unsuccStmt) ()
@@ -82,4 +98,4 @@ instance Functor f => Applicative (Free f) where
 instance Functor f => Monad (Free f) where
   return = pure
   (Pure a) >>= f = f a
-  (Free fs) >>= f = Free $ (>>= f) <$> fs
+  (Free fs) >>= f = Free $ (>>= f) <$> fs 

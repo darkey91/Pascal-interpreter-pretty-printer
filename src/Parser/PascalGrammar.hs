@@ -16,8 +16,7 @@ module Parser.PascalGrammar
     Increment (..),
     Expr (..),
     Identifier,
-    isCompound,
-    isEmpty,
+    isCompoundStmt
   )
 where
 
@@ -63,15 +62,19 @@ data Parameter = Parameter
   }
   deriving (Eq, Show)
 
+instance Ord Parameter where
+    a `compare` b = show a `compare` show b
+
 data PascalType = PascalString | PascalInteger | PascalReal | PascalBoolean | PascalChar | PascalVoid
   deriving (Eq, Show)
 
 data PascalTypedValue
-  = PascalStringValue String
-  | PascalIntegerValue Int
-  | PascalRealValue Double
-  | PascalBooleanValue Bool
-  | PascalCharValue Char
+  = StringValue String
+  | IntegerValue Int
+  | RealValue Double
+  | BooleanValue Bool
+  | CharValue Char
+  | EmptyValue
   deriving (Eq, Show)
 
 newtype Statements = Statements {statements :: [Statement]}
@@ -94,16 +97,11 @@ data Statement
 newtype ParamList = ParamList {paramListParams :: [Expr]}
   deriving (Eq, Show)
 
-isCompound :: Statement -> Bool
-isCompound stmt = case stmt of
+isCompoundStmt :: Statement -> Bool
+isCompoundStmt stmt = case stmt of
   CompoundStatement _ -> True
   _ -> False
-
-isEmpty :: Statement -> Bool
-isEmpty stmt = case stmt of
-  EmptyStatement -> True
-  _ -> False
-
+  
 data Increment = To | DownTo
   deriving (Eq, Show)
 
@@ -131,13 +129,5 @@ data Expr
   | ExprNot Expr
   | ExprVar String
   | ExprFunctionCall Identifier ParamList
-  deriving (Eq, Show)
-
---newtype Interp a = Interp { runInterp :: Store -> Either String (a, Store) }
---
---instance Monad Interp where
---  return x = Interp $ \r -> Right (x, r)
---  i >>= k  = Interp $ \r -> case runInterp i r of
---               Left msg      -> Left msg
---               Right (x, r') -> runInterp (k x) r'
---  fail msg = Interp $ \_ -> Left msg
+  | EmptyExpr
+  deriving (Eq, Show)  

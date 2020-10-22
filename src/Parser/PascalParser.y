@@ -85,11 +85,11 @@ Block
     | ProcedureAndFunctionDeclParts Block 			{ BlockWithFunc $1 $2 }
 
 UnsignedNumber
-	: REAL_VALUE									{ PascalRealValue $ read $1 }
-	| INTEGER_VALUE									{ PascalIntegerValue $ read $1 }
+	: REAL_VALUE									{ RealValue $ read $1 }
+	| INTEGER_VALUE									{ IntegerValue $ read $1 }
 
 StringValue
-	: STRING_VALUE								{ PascalStringValue $1 }
+	: STRING_VALUE								{ StringValue $1 }
 
 VarDeclParts
     : {- empty -}							{ [] }
@@ -190,8 +190,8 @@ Expression
     | Bool                          { $1 }
 
 Bool
-	: TRUE							{ ExprVal (PascalBooleanValue True) }
-	| FALSE							{ ExprVal (PascalBooleanValue False) }
+	: TRUE							{ ExprVal (BooleanValue True) }
+	| FALSE							{ ExprVal (BooleanValue False) }
 
 FunctionCall
 	: IDENTIFIER '(' ParamList ')'			{ ExprFunctionCall $1 $3 }
