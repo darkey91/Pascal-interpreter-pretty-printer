@@ -56,7 +56,6 @@ tokens :-
     $s $t $r $i $n $g                               { tokenize StringToken }
     $i $n $t $e $g $e $r                            { tokenize IntegerToken }
     $r $e $a $l                                     { tokenize RealToken }
-    $c $o $n $s $t                                  { tokenize ConstToken }
     $c $h $a $r                                     { tokenize CharToken }
     $a $n $d                                        { tokenize AndToken }
     $o $r                                           { tokenize OrToken }
@@ -113,7 +112,7 @@ data TokenType = ProgramToken | BeginToken | EndToken
   | StringToken  | StringValToken
   | IntegerToken | IntegerValToken
   | RealToken | RealValToken
-  | ConstToken | CharToken
+  | CharToken
   | AndToken | OrToken | NotToken
   | PlusToken | MinusToken | StarToken | SlashToken | ModToken | DivToken
   | LParenToken | RParenToken | LBracketToken | RBracketToken

@@ -35,6 +35,7 @@ library
       Parser.PascalLexer
       Parser.PascalParser
       Parser.ParseResult
+      Interpreter
   other-modules:
       Paths_interp
   hs-source-dirs:
@@ -44,6 +45,7 @@ library
     , base >=4.7 && <5
     , mtl
     , transformers
+    , containers
   default-language: Haskell2010
 
 executable interp-exe

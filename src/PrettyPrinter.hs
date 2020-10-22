@@ -18,9 +18,6 @@ class PrettyPrintable p where
 class PrettyPrintableStr p where
   prettyPrintStr :: p -> String
 
-  prettyPrintStrWithQuotes :: p -> String
-  prettyPrintStrWithQuotes = (\s -> "'" ++ s ++ "'") . prettyPrintStr
-
   pprintStringsWithTab :: [p] -> [String]
   pprintStringsWithTab = map (\c -> '\t' : prettyPrintStr c)
 
@@ -37,23 +34,8 @@ instance PrettyPrintableStr Program where
 
 instance PrettyPrintable Block where
   prettyPrint (SimpleBlock stmts) = "begin" : pprintWithTab stmts ++ ["end"]
-  prettyPrint (BlockWithConst constDefs block) = prettyPrint constDefs ++ prettyPrint block
   prettyPrint (BlockWithVar varDecl block) = prettyPrint varDecl ++ prettyPrint block
   prettyPrint (BlockWithFunc procAndFuncDecls block) = prettyPrint procAndFuncDecls ++ prettyPrint block
-
-instance PrettyPrintable ConstantDefPart where
-  prettyPrint constPart = do
-    let constKw = "const"
-    let (singleDef, otherDef) = case constantDefPartDefs constPart of
-          [c] -> (' ' : prettyPrintStr c, [])
-          cs -> ([], pprintStringsWithTab cs)
-    (constKw ++ singleDef) : otherDef
-
-instance PrettyPrintableStr Constant where
-  prettyPrintStr c = do
-    let sign = isConstNeg c ? "-" :? ""
-    let value = (isConstVar c ? prettyPrintStrWithQuotes :? prettyPrintStr) . constValue
-    constIdent c ++ " = " ++ sign ++ value c ++ ";"
 
 instance PrettyPrintable VarDeclPart where
   prettyPrint varPart = do
@@ -126,7 +108,7 @@ instance PrettyPrintableStr Expr where
   prettyPrintStr (ExprOr l r) = prettyPrintStr l ++ " or " ++ prettyPrintStr r
   prettyPrintStr (ExprNot expr) = "not " ++ prettyPrintStr expr
   prettyPrintStr (ExprVar str) = str
-  prettyPrintStr (ExprFunctionDesignator str params) = str ++ prettyPrintStr params
+  prettyPrintStr (ExprFunctionCall str params) = str ++ prettyPrintStr params
 
 instance PrettyPrintableStr Parameter where
   prettyPrintStr p = do

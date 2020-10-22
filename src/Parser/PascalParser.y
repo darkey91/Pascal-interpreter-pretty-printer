@@ -37,7 +37,6 @@ import Parser.ParseResult
     INTEGER_VALUE   { Token IntegerValToken _ _ $$ }
     REAL	        { Token RealToken _ _ _ }
     REAL_VALUE      { Token RealValToken _ _ $$ }
-    CONST           { Token ConstToken _ _ _ }
     CHAR            { Token CharToken _ _ _ }
     AND             { Token AndToken _ _ _ }
     OR              { Token OrToken _ _ _ }
@@ -82,25 +81,8 @@ ProgramHeading
 
 Block
     : BEGIN Statements END							{ SimpleBlock $2 }
-    | ConstantDefParts Block						{ BlockWithConst $1 $2 }
     | VarDeclParts Block							{ BlockWithVar $1 $2 }
     | ProcedureAndFunctionDeclParts Block 			{ BlockWithFunc $1 $2 }
-
-ConstantDefParts
-    : {- empty -}                     				{ [] }
-    | ConstantDefPart ConstantDefParts				{ $1 : $2 }
-
-ConstantDefPart
-	: CONST ConstantDefinitions                  	{ ConstantDefPart $2 }
-
-ConstantDefinitions
-	: ConstantDefinition ';'						{ [$1] }
-	| ConstantDefinition ';' ConstantDefinitions	{ $1 : $3 }
-
-ConstantDefinition
-	: IDENTIFIER '=' UnsignedNumber				{ Constant $1 $3 False False }
-	| IDENTIFIER '=' '-' UnsignedNumber			{ Constant $1 $4 False True }
-	| IDENTIFIER '=' StringValue				{ Constant $1 $3 False False}
 
 UnsignedNumber
 	: REAL_VALUE									{ PascalRealValue $ read $1 }
@@ -204,15 +186,15 @@ Expression
     | IDENTIFIER					{ ExprVar $1 }
     | UnsignedNumber				{ ExprVal $1 }
     | StringValue					{ ExprVal $1 }
-    | FunctionDesignator			{ $1 }
+    | FunctionCall			{ $1 }
     | Bool                          { $1 }
 
 Bool
 	: TRUE							{ ExprVal (PascalBooleanValue True) }
 	| FALSE							{ ExprVal (PascalBooleanValue False) }
 
-FunctionDesignator
-	: IDENTIFIER '(' ParamList ')'			{ ExprFunctionDesignator $1 $3 }
+FunctionCall
+	: IDENTIFIER '(' ParamList ')'			{ ExprFunctionCall $1 $3 }
 
 IfStatement
     : IF Expression THEN Statement                  { IfStatement $2 $4 EmptyStatement }

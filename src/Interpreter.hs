@@ -1,8 +1,19 @@
+
 module Interpreter where
 
---import Control.Monad.Trans.Free
---  ( FreeT
---  )
---
---
---  
+import Data.Map.Strict
+import Code
+
+import Parser.PascalGrammar
+
+data Err
+  = LogicErr
+  | InterpretErr
+
+type Scope = Map String Expr
+
+type Store = [Scope]
+
+
+
+

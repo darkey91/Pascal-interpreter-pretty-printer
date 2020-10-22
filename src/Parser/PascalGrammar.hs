@@ -1,27 +1,23 @@
---{-# LANGUAGE GADTs #-}
-
 module Parser.PascalGrammar
   ( Program (..),
     Block (..),
-    Statements(..),
+    Statements (..),
     Statement (..),
-    ParamList(..),
-    Constant (..),
-    ConstantDefParts,
-    ConstantDefPart(..),
+    ParamList (..),
     VarDeclParts,
-    VarDeclPart(..),
+    VarDeclPart (..),
     VariableDeclaration (..),
     ProcedureAndFunctionDeclParts,
     ProcedureOrFunctionDeclaration (..),
-    ParameterSection(..),
-    Parameter(..),
+    ParameterSection (..),
+    Parameter (..),
     PascalType (..),
     PascalTypedValue (..),
     Increment (..),
     Expr (..),
+    Identifier,
     isCompound,
-    isEmpty
+    isEmpty,
   )
 where
 
@@ -33,27 +29,13 @@ data Program = Program
 
 data Block
   = SimpleBlock Statements
-  | BlockWithConst ConstantDefParts Block
   | BlockWithVar VarDeclParts Block
   | BlockWithFunc ProcedureAndFunctionDeclParts Block
   deriving (Eq, Show)
 
-type ConstantDefParts = [ConstantDefPart]
-
-newtype ConstantDefPart = ConstantDefPart { constantDefPartDefs :: [Constant] }
-  deriving (Eq, Show)
-
-data Constant = Constant
-  { constIdent :: VariableIdent,
-    constValue :: PascalTypedValue,
-    isConstVar :: Bool,
-    isConstNeg :: Bool
-  }
-  deriving (Eq, Show)
-
 type VarDeclParts = [VarDeclPart]
 
-newtype VarDeclPart = VarDeclPart { varDeclPartDecls :: [VariableDeclaration] }
+newtype VarDeclPart = VarDeclPart {varDeclPartDecls :: [VariableDeclaration]}
   deriving (Eq, Show)
 
 data VariableDeclaration = VariableDeclaration
@@ -72,10 +54,10 @@ data ProcedureOrFunctionDeclaration = ProcedureOrFunctionDeclaration
   }
   deriving (Eq, Show)
 
-newtype ParameterSection = ParameterSection { parameterSectionParams :: [Parameter] }
+newtype ParameterSection = ParameterSection {parameterSectionParams :: [Parameter]}
   deriving (Eq, Show)
 
-data Parameter = Parameter 
+data Parameter = Parameter
   { paramIdents :: [VariableIdent],
     paramType :: PascalType
   }
@@ -92,7 +74,7 @@ data PascalTypedValue
   | PascalCharValue Char
   deriving (Eq, Show)
 
-newtype Statements = Statements { statements :: [Statement] } 
+newtype Statements = Statements {statements :: [Statement]}
   deriving (Eq, Show)
 
 type SuccessfulCase = Statement
@@ -109,23 +91,23 @@ data Statement
   | EmptyStatement
   deriving (Eq, Show)
 
-newtype ParamList = ParamList { paramListParams :: [Expr] }
+newtype ParamList = ParamList {paramListParams :: [Expr]}
   deriving (Eq, Show)
-  
+
 isCompound :: Statement -> Bool
 isCompound stmt = case stmt of
   CompoundStatement _ -> True
-  _                   -> False
+  _ -> False
 
-isEmpty :: Statement -> Bool  
+isEmpty :: Statement -> Bool
 isEmpty stmt = case stmt of
   EmptyStatement -> True
-  _              -> False  
+  _ -> False
 
 data Increment = To | DownTo
   deriving (Eq, Show)
 
-type VariableIdent = Identifier
+type VariableIdent = String
 
 type Identifier = String
 
@@ -148,9 +130,8 @@ data Expr
   | ExprOr Expr Expr
   | ExprNot Expr
   | ExprVar String
-  | ExprFunctionDesignator String ParamList
+  | ExprFunctionCall Identifier ParamList
   deriving (Eq, Show)
-
 
 --newtype Interp a = Interp { runInterp :: Store -> Either String (a, Store) }
 --
