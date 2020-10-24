@@ -56,12 +56,13 @@ tokens :-
     $s $t $r $i $n $g                               { tokenize StringToken }
     $i $n $t $e $g $e $r                            { tokenize IntegerToken }
     $r $e $a $l                                     { tokenize RealToken }
-    $c $h $a $r                                     { tokenize CharToken }
     $a $n $d                                        { tokenize AndToken }
     $o $r                                           { tokenize OrToken }
     $n $o $t                                        { tokenize NotToken }
     $m $o $d                                        { tokenize ModToken }
     $d $i $v                                        { tokenize DivToken }
+    $w $r $i $t $e $l $n                            { tokenize WritelnToken }
+    $r $e $a $d $l $n                               { tokenize ReadlnToken }
     \: \=                                           { tokenize AssignToken }
     \+                                              { tokenize PlusToken }
     \-                                              { tokenize MinusToken }
@@ -112,12 +113,12 @@ data TokenType = ProgramToken | BeginToken | EndToken
   | StringToken  | StringValToken
   | IntegerToken | IntegerValToken
   | RealToken | RealValToken
-  | CharToken
   | AndToken | OrToken | NotToken
   | PlusToken | MinusToken | StarToken | SlashToken | ModToken | DivToken
   | LParenToken | RParenToken | LBracketToken | RBracketToken
   | DotToken | DotDotToken | CommaToken | ColonToken | SemiToken
   | EQToken | NEQToken | LTToken | GTToken | GEToken | LEToken
+  | WritelnToken | ReadlnToken
   deriving (Eq, Show)
 
 data Token = Token

@@ -2,13 +2,12 @@
 
 module Code where
 
-import Control.Applicative
 import Control.Monad
 import Parser.PascalGrammar
 
 data PascalCodeF next
-  = PrintLn String next
-  | ReadString (String -> next)
+  = Writeln [Expr] next
+  | Readln [Identifier] next
   | Assign Identifier Expr next
   | Empty next
   | While Expr Code next
@@ -19,11 +18,10 @@ data PascalCodeF next
   | VDeclaration Identifier PascalType next
   deriving (Functor)
 
-
 --todo remove
 showProgram :: Show r => Free PascalCodeF r -> String 
-showProgram  (Free (PrintLn str next)) = "println " ++ str ++ "\n" ++ showProgram next
-showProgram  (Free (ReadString f)) = "AAAAA" 
+showProgram  (Free (Writeln str next)) = "AAAAA"
+showProgram  (Free (Readln f next)) = "AAAAA"
 showProgram  (Free (Assign ident expr next)) = "assign " ++ "\n" ++ showProgram next  
 showProgram  (Free (Empty next)) = "empty\n" ++ showProgram next  
 showProgram  (Free (While expr code next)) = "while\n" ++ showProgram next 
@@ -75,6 +73,8 @@ instance CodeConverter ProcedureOrFunctionDeclaration where
 instance CodeConverter Statement where
   convert (AssignmentStmt ident expr) = liftF $ Assign ident expr ()
   convert (ProcedureStmt ident paramList) = liftF $ Expression (ExprFunctionCall ident paramList) ()
+  convert (WritelnStmt paramList) = liftF $ Writeln (paramListParams paramList) ()
+  convert (ReadlnStmt idents) = liftF $ Readln idents ()
   convert (CompoundStatement stmts) = convert $ statements stmts
   convert (IfStatement expr succStmt unsuccStmt) = liftF $ If expr (convert succStmt) (convert unsuccStmt) ()
   convert (ForStatement ident exprFrom increment exprTo stmt) = liftF $ For ident exprFrom increment exprTo (convert stmt) ()

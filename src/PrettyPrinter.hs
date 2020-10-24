@@ -67,6 +67,8 @@ pprintStatement s = (isCompoundStmt s ? prettyPrint :? pprintWithTab) s
 instance PrettyPrintable Statement where
   prettyPrint (AssignmentStmt ident expr) = [ident ++ " := " ++ prettyPrintStr expr]
   prettyPrint (ProcedureStmt ident params) = [ident ++ prettyPrintStr params]
+  prettyPrint (WritelnStmt params) = ["writeln" ++ prettyPrintStr params]
+  prettyPrint (ReadlnStmt idents) = ["readln(" ++ intercalate ", " idents ++ ")"]
   prettyPrint (CompoundStatement stmts) = "begin" : pprintWithTab stmts ++ ["end"]
   prettyPrint (WhileStatement expr stmt) = unwords ["while", prettyPrintStr expr, "do"] : pprintStatement stmt
   prettyPrint EmptyStatement = []
@@ -140,7 +142,6 @@ instance PrettyPrintableStr PascalType where
   prettyPrintStr PascalInteger = "integer"
   prettyPrintStr PascalReal = "real"
   prettyPrintStr PascalBoolean = "boolean"
-  prettyPrintStr PascalChar = "char"
   prettyPrintStr PascalVoid = ""
 
 instance PrettyPrintableStr Increment where

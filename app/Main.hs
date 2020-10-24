@@ -11,6 +11,8 @@ import System.Environment (getArgs, getProgName)
 import System.IO
 import Text.Pretty.Simple (pPrint)
 
+import Interpreter ( run )
+
 --test todo remove
 --programAst =
 
@@ -18,7 +20,7 @@ import Text.Pretty.Simple (pPrint)
 usageMsg :: IO ()
 usageMsg = do
   appName <- getProgName
-  putStrLn $ "Incorrect usage! Usage: " ++ appName ++ " <pprint|run|ast> <pathToFile>"
+  putStrLn $ "Incorrect usage! Usage: " ++ appName ++ " <pprint|exec|ast> <pathToFile>"
 
 parseExpr :: String -> Either String Program
 parseExpr str = do
@@ -44,12 +46,20 @@ dumpAst fname = do
     Fail s -> putStrLn s
     Ok ast -> pPrint ast
 
+exec :: FilePath -> IO ()
+exec fileName = do
+  code <- readFile fileName
+  let ast = parseExpr code
+  case ast of
+      Left err -> putStrLn err
+      Right ast -> run ast
+
 main :: IO ()
 main = do
 --  putStrLn $ showProgram $ convert programAst
   args <- getArgs
   case args of
     ["pprint", fName] -> pprint fName
-    ["run", fName] -> undefined
+    ["exec", fName] -> exec fName
     ["ast", fName] -> dumpAst fName
     _ -> usageMsg

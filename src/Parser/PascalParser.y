@@ -37,10 +37,11 @@ import Parser.ParseResult
     INTEGER_VALUE   { Token IntegerValToken _ _ $$ }
     REAL	        { Token RealToken _ _ _ }
     REAL_VALUE      { Token RealValToken _ _ $$ }
-    CHAR            { Token CharToken _ _ _ }
     AND             { Token AndToken _ _ _ }
     OR              { Token OrToken _ _ _ }
     NOT             { Token NotToken _ _ _ }
+    WRITELN			{ Token WritelnToken _ _ _ }
+    READLN			{ Token ReadlnToken _ _ _ }
     '+'             { Token PlusToken _ _ _ }
     '-'             { Token MinusToken _ _ _ }
     '*'             { Token StarToken _ _ _ }
@@ -106,8 +107,7 @@ VarDeclaration
 	: IdentifierList ':' TypeIdentifier		{ VariableDeclaration $1 $3 }
 
 TypeIdentifier
-	: CHAR					{ PascalChar }
-	| BOOLEAN				{ PascalBoolean }
+	: BOOLEAN				{ PascalBoolean }
 	| INTEGER				{ PascalInteger }
 	| REAL					{ PascalReal }
 	| STRING				{ PascalString }
@@ -118,7 +118,7 @@ ProcedureAndFunctionDeclParts
 
 ProcedureAndFunctionDeclPart
     : ProcedureDeclaration ';'												{ $1 }
-    | FunctionDeclaration  ';'													{ $1 }
+    | FunctionDeclaration  ';'												{ $1 }
 
 ProcedureDeclaration
 	: PROCEDURE IDENTIFIER ';' Block										{ ProcedureOrFunctionDeclaration $2 (ParameterSection []) PascalVoid $4 }
@@ -144,19 +144,22 @@ Statements
     | Statement ';' Statements				{ Statements ($1 : statements $3) }
 
 Statement
-	: AssignmentStatement		{ $1 }
-	| ProcedureStatement		{ $1 }
-    | BEGIN Statements END		{ CompoundStatement $2 }
-    | IfStatement				{ $1 }
-    | ForStatement				{ $1 }
-    | WhileStatement			{ $1 }
-	| {- empty -}				{ EmptyStatement }
+	: AssignmentStatement				{ $1 }
+	| ProcedureStatement				{ $1 }
+	| Writeln							{ $1 }
+	| READLN '(' IdentifierList ')'		{ ReadlnStmt $3 }
+    | BEGIN Statements END				{ CompoundStatement $2 }
+    | IfStatement						{ $1 }
+    | ForStatement						{ $1 }
+    | WhileStatement					{ $1 }
+	| {- empty -}						{ EmptyStatement }
+
+Writeln
+	: WRITELN								{ WritelnStmt (ParamList []) }
+    | WRITELN '(' ParamList ')'				{ WritelnStmt $3 }
 
 AssignmentStatement
 	: IDENTIFIER ASSIGN Expression				{ AssignmentStmt $1 $3 }
-
-Variable
-	: IDENTIFIER								{ $1 }
 
 ProcedureStatement
 	: IDENTIFIER								{ ProcedureStmt $1 (ParamList []) }

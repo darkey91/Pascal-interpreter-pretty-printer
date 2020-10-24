@@ -16,10 +16,10 @@ module Parser.PascalGrammar
     Increment (..),
     Expr (..),
     Identifier,
-    BinaryOperation(..),
-    UnaryOperation(..),
+    BinaryOperation (..),
+    UnaryOperation (..),
     isCompoundStmt,
-    getType
+    getType,
   )
 where
 
@@ -27,24 +27,24 @@ data Program = Program
   { programIdent :: Identifier,
     programBlock :: Block
   }
-  deriving Show
+  deriving (Show)
 
 data Block
   = SimpleBlock Statements
   | BlockWithVar VarDeclParts Block
   | BlockWithFunc ProcedureAndFunctionDeclParts Block
-  deriving Show
+  deriving (Show)
 
 type VarDeclParts = [VarDeclPart]
 
 newtype VarDeclPart = VarDeclPart {varDeclPartDecls :: [VariableDeclaration]}
-  deriving Show
+  deriving (Show)
 
 data VariableDeclaration = VariableDeclaration
   { variableDeclarationIdents :: [VariableIdent],
     variableDeclarationType :: PascalType
   }
-  deriving Show
+  deriving (Show)
 
 type ProcedureAndFunctionDeclParts = [ProcedureOrFunctionDeclaration]
 
@@ -54,18 +54,23 @@ data ProcedureOrFunctionDeclaration = ProcedureOrFunctionDeclaration
     functionReturnType :: PascalType,
     functionBlock :: Block
   }
-  deriving Show
+  deriving (Show)
 
 newtype ParameterSection = ParameterSection {parameterSectionParams :: [Parameter]}
-  deriving Show
+  deriving (Show)
 
 data Parameter = Parameter
   { paramIdents :: [VariableIdent],
     paramType :: PascalType
   }
-  deriving Show
-    
-data PascalType = PascalString | PascalInteger | PascalReal | PascalBoolean | PascalChar | PascalVoid
+  deriving (Show)
+
+data PascalType
+  = PascalString
+  | PascalInteger
+  | PascalReal
+  | PascalBoolean
+  | PascalVoid
   deriving (Eq, Show)
 
 instance Ord PascalType where
@@ -77,7 +82,6 @@ data PascalTypedValue
   | RealValue Double
   | BooleanValue Bool
   | EmptyValue
-  deriving Show
 
 getType :: PascalTypedValue -> PascalType
 getType (StringValue _) = PascalString
@@ -86,8 +90,15 @@ getType (RealValue _) = PascalReal
 getType (BooleanValue _) = PascalBoolean
 getType EmptyValue = PascalVoid
 
+instance Show PascalTypedValue where
+  show (StringValue v) = show v
+  show (IntegerValue v) = show v
+  show (RealValue v) = show v
+  show (BooleanValue v) = show v
+  show EmptyValue = "void"
+
 newtype Statements = Statements {statements :: [Statement]}
-  deriving Show
+  deriving (Show)
 
 type SuccessfulCase = Statement
 
@@ -100,19 +111,21 @@ data Statement
   | IfStatement Expr SuccessfulCase UnsuccessfulCase
   | ForStatement Identifier Expr Increment Expr Statement
   | WhileStatement Expr Statement
+  | WritelnStmt ParamList
+  | ReadlnStmt [VariableIdent]
   | EmptyStatement
-  deriving Show
+  deriving (Show)
 
 newtype ParamList = ParamList {paramListParams :: [Expr]}
-  deriving Show
+  deriving (Show)
 
 isCompoundStmt :: Statement -> Bool
 isCompoundStmt stmt = case stmt of
   CompoundStatement _ -> True
   _ -> False
-  
+
 data Increment = To | DownTo
-  deriving Show
+  deriving (Show)
 
 type VariableIdent = String
 
@@ -125,8 +138,8 @@ data Expr
   | ExprUnOp UnaryOperation Expr
   | ExprVar String
   | ExprFunctionCall Identifier ParamList
-  deriving Show  
-  
+  deriving (Show)
+
 data BinaryOperation
   = Plus
   | Minus
@@ -141,7 +154,7 @@ data BinaryOperation
   | LEOp
   | And
   | Or
-  deriving Show
-    
+  deriving (Show)
+
 data UnaryOperation = Not | Negate
-  deriving Show  
+  deriving (Show)
