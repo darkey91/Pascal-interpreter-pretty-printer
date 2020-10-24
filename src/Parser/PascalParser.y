@@ -167,26 +167,26 @@ ParamList
     | Expression ',' ParamList					{ ParamList ($1 : paramListParams $3) }
 
 Expression
-    : Expression '+' Expression		{ ExprPlus $1 $3 }
-    | Expression '-' Expression		{ ExprMinus $1 $3 }
-    | Expression '*' Expression		{ ExprMul $1 $3 }
-    | Expression '/' Expression		{ ExprDiv $1 $3 }
-    | Expression DIV Expression		{ ExprIntDiv $1 $3 }
-    | Expression '=' Expression     { ExprEq $1 $3 }
-    | Expression '<>' Expression    { ExprNeq $1 $3 }
-    | Expression '<' Expression		{ ExprLT $1 $3 }
-    | Expression '>' Expression		{ ExprGT $1 $3 }
-    | Expression '<=' Expression	{ ExprLE $1 $3 }
-    | Expression '>=' Expression	{ ExprGT $1 $3 }
-    | '-' Expression           		{ ExprNeg $2 }
-    | Expression AND Expression		{ ExprAnd $1 $3 }
-    | Expression OR Expression 		{ ExprOr $1 $3 }
-    | NOT Expression           		{ ExprNot $2 }
+    : Expression '+' Expression		{ ExprBinOp Plus $1 $3 }
+    | Expression '-' Expression		{ ExprBinOp Minus $1 $3 }
+    | Expression '*' Expression		{ ExprBinOp Mul $1 $3 }
+    | Expression '/' Expression		{ ExprBinOp Div $1 $3 }
+    | Expression DIV Expression		{ ExprBinOp IntDiv $1 $3 }
+    | Expression '=' Expression     { ExprBinOp EqOp $1 $3 }
+    | Expression '<>' Expression    { ExprBinOp NeqOp $1 $3 }
+    | Expression '<' Expression		{ ExprBinOp LTOp $1 $3 }
+    | Expression '>' Expression		{ ExprBinOp GTOp $1 $3 }
+    | Expression '<=' Expression	{ ExprBinOp LEOp $1 $3 }
+    | Expression '>=' Expression	{ ExprBinOp GTOp $1 $3 }
+    | Expression AND Expression		{ ExprBinOp And $1 $3 }
+    | Expression OR Expression 		{ ExprBinOp Or $1 $3 }
+    | '-' Expression           		{ ExprUnOp Negate $2 }
+    | NOT Expression           		{ ExprUnOp Not $2 }
     | '(' Expression ')'       		{ ExprBracketed $2 }
     | IDENTIFIER					{ ExprVar $1 }
     | UnsignedNumber				{ ExprVal $1 }
     | StringValue					{ ExprVal $1 }
-    | FunctionCall			{ $1 }
+    | FunctionCall					{ $1 }
     | Bool                          { $1 }
 
 Bool

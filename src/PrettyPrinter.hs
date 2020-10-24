@@ -86,30 +86,35 @@ instance PrettyPrintableStr ParamList where
 
 instance PrettyPrintableStr ParameterSection where
   prettyPrintStr p = case parameterSectionParams p of
-   [] -> ""
-   ps -> '(' : intercalate ", " (map prettyPrintStr ps) ++ ")"
+    [] -> ""
+    ps -> '(' : intercalate ", " (map prettyPrintStr ps) ++ ")"
 
 instance PrettyPrintableStr Expr where
   prettyPrintStr (ExprBracketed expr) = '(' : prettyPrintStr expr ++ ")"
   prettyPrintStr (ExprVal t) = prettyPrintStr t
-  prettyPrintStr (ExprNeg expr) = '-' : prettyPrintStr expr
-  prettyPrintStr (ExprPlus l r) = prettyPrintStr l ++ " + " ++ prettyPrintStr r
-  prettyPrintStr (ExprMinus l r) = prettyPrintStr l ++ " - " ++ prettyPrintStr r
-  prettyPrintStr (ExprMul l r) = prettyPrintStr l ++ " * " ++ prettyPrintStr r
-  prettyPrintStr (ExprDiv l r) = prettyPrintStr l ++ " \\ " ++ prettyPrintStr r
-  prettyPrintStr (ExprIntDiv l r) = prettyPrintStr l ++ " div " ++ prettyPrintStr r
-  prettyPrintStr (ExprEq l r) = prettyPrintStr l ++ " = " ++ prettyPrintStr r
-  prettyPrintStr (ExprNeq l r) = prettyPrintStr l ++ " <> " ++ prettyPrintStr r
-  prettyPrintStr (ExprGT l r) = prettyPrintStr l ++ " > " ++ prettyPrintStr r
-  prettyPrintStr (ExprLT l r) = prettyPrintStr l ++ " < " ++ prettyPrintStr r
-  prettyPrintStr (ExprGE l r) = prettyPrintStr l ++ " >= " ++ prettyPrintStr r
-  prettyPrintStr (ExprLE l r) = prettyPrintStr l ++ " <= " ++ prettyPrintStr r
-  prettyPrintStr (ExprAnd l r) = prettyPrintStr l ++ " and " ++ prettyPrintStr r
-  prettyPrintStr (ExprOr l r) = prettyPrintStr l ++ " or " ++ prettyPrintStr r
-  prettyPrintStr (ExprNot expr) = "not " ++ prettyPrintStr expr
+  prettyPrintStr (ExprBinOp binOp l r) = prettyPrintStr l ++ prettyPrintStr binOp ++ prettyPrintStr r
+  prettyPrintStr (ExprUnOp unOp expr) = prettyPrintStr unOp ++ prettyPrintStr expr
   prettyPrintStr (ExprVar str) = str
   prettyPrintStr (ExprFunctionCall str params) = str ++ prettyPrintStr params
-  prettyPrintStr EmptyExpr = ""
+
+instance PrettyPrintableStr BinaryOperation where
+  prettyPrintStr Plus = " + "
+  prettyPrintStr Minus = " - "
+  prettyPrintStr Mul = " * "
+  prettyPrintStr Div = " \\ "
+  prettyPrintStr IntDiv = " div "
+  prettyPrintStr EqOp = " = "
+  prettyPrintStr NeqOp = " <> "
+  prettyPrintStr GTOp = " > "
+  prettyPrintStr LTOp = " < "
+  prettyPrintStr GEOp = " >= "
+  prettyPrintStr LEOp = " <= "
+  prettyPrintStr And = " and "
+  prettyPrintStr Or = " or "
+
+instance PrettyPrintableStr UnaryOperation where
+  prettyPrintStr Negate = "-"
+  prettyPrintStr Not = "not "
 
 instance PrettyPrintableStr Parameter where
   prettyPrintStr p = do
@@ -128,8 +133,7 @@ instance PrettyPrintableStr PascalTypedValue where
   prettyPrintStr (IntegerValue t) = prettyPrintStr t
   prettyPrintStr (RealValue t) = prettyPrintStr t
   prettyPrintStr (BooleanValue t) = prettyPrintStr t
-  prettyPrintStr (CharValue t) = "'" ++ [t] ++ "'"
-  prettyPrintStr EmptyValue = "" 
+  prettyPrintStr EmptyValue = ""
 
 instance PrettyPrintableStr PascalType where
   prettyPrintStr PascalString = "string"

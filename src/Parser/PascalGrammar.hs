@@ -16,7 +16,10 @@ module Parser.PascalGrammar
     Increment (..),
     Expr (..),
     Identifier,
-    isCompoundStmt
+    BinaryOperation(..),
+    UnaryOperation(..),
+    isCompoundStmt,
+    getType
   )
 where
 
@@ -24,24 +27,24 @@ data Program = Program
   { programIdent :: Identifier,
     programBlock :: Block
   }
-  deriving (Eq, Show)
+  deriving Show
 
 data Block
   = SimpleBlock Statements
   | BlockWithVar VarDeclParts Block
   | BlockWithFunc ProcedureAndFunctionDeclParts Block
-  deriving (Eq, Show)
+  deriving Show
 
 type VarDeclParts = [VarDeclPart]
 
 newtype VarDeclPart = VarDeclPart {varDeclPartDecls :: [VariableDeclaration]}
-  deriving (Eq, Show)
+  deriving Show
 
 data VariableDeclaration = VariableDeclaration
   { variableDeclarationIdents :: [VariableIdent],
     variableDeclarationType :: PascalType
   }
-  deriving (Eq, Show)
+  deriving Show
 
 type ProcedureAndFunctionDeclParts = [ProcedureOrFunctionDeclaration]
 
@@ -51,10 +54,10 @@ data ProcedureOrFunctionDeclaration = ProcedureOrFunctionDeclaration
     functionReturnType :: PascalType,
     functionBlock :: Block
   }
-  deriving (Eq, Show)
+  deriving Show
 
 newtype ParameterSection = ParameterSection {parameterSectionParams :: [Parameter]}
-  deriving (Eq, Show)
+  deriving Show
 
 data Parameter = Parameter
   { paramIdents :: [VariableIdent],
@@ -62,23 +65,30 @@ data Parameter = Parameter
   }
   deriving (Eq, Show)
 
-instance Ord Parameter where
-    a `compare` b = show a `compare` show b
-
 data PascalType = PascalString | PascalInteger | PascalReal | PascalBoolean | PascalChar | PascalVoid
   deriving (Eq, Show)
+
+instance Ord PascalType where
+  a `compare` b = show a `compare` show b
+
 
 data PascalTypedValue
   = StringValue String
   | IntegerValue Int
   | RealValue Double
   | BooleanValue Bool
-  | CharValue Char
   | EmptyValue
-  deriving (Eq, Show)
+  deriving Show
+
+getType :: PascalTypedValue -> PascalType
+getType (StringValue _) = PascalString
+getType (IntegerValue _) = PascalInteger
+getType (RealValue _) = PascalReal
+getType (BooleanValue _) = PascalBoolean
+getType EmptyValue = PascalVoid
 
 newtype Statements = Statements {statements :: [Statement]}
-  deriving (Eq, Show)
+  deriving Show
 
 type SuccessfulCase = Statement
 
@@ -92,10 +102,10 @@ data Statement
   | ForStatement Identifier Expr Increment Expr Statement
   | WhileStatement Expr Statement
   | EmptyStatement
-  deriving (Eq, Show)
+  deriving Show
 
 newtype ParamList = ParamList {paramListParams :: [Expr]}
-  deriving (Eq, Show)
+  deriving Show
 
 isCompoundStmt :: Statement -> Bool
 isCompoundStmt stmt = case stmt of
@@ -103,7 +113,7 @@ isCompoundStmt stmt = case stmt of
   _ -> False
   
 data Increment = To | DownTo
-  deriving (Eq, Show)
+  deriving Show
 
 type VariableIdent = String
 
@@ -112,22 +122,27 @@ type Identifier = String
 data Expr
   = ExprBracketed Expr
   | ExprVal PascalTypedValue
-  | ExprNeg Expr
-  | ExprPlus Expr Expr
-  | ExprMinus Expr Expr
-  | ExprMul Expr Expr
-  | ExprDiv Expr Expr
-  | ExprIntDiv Expr Expr
-  | ExprEq Expr Expr
-  | ExprNeq Expr Expr
-  | ExprGT Expr Expr
-  | ExprLT Expr Expr
-  | ExprGE Expr Expr
-  | ExprLE Expr Expr
-  | ExprAnd Expr Expr
-  | ExprOr Expr Expr
-  | ExprNot Expr
+  | ExprBinOp BinaryOperation Expr Expr
+  | ExprUnOp UnaryOperation Expr
   | ExprVar String
   | ExprFunctionCall Identifier ParamList
-  | EmptyExpr
-  deriving (Eq, Show)  
+  deriving Show  
+  
+data BinaryOperation
+  = Plus
+  | Minus
+  | Mul
+  | Div
+  | IntDiv
+  | EqOp
+  | NeqOp
+  | GTOp
+  | LTOp
+  | GEOp
+  | LEOp
+  | And
+  | Or
+  deriving Show
+    
+data UnaryOperation = Not | Negate
+  deriving Show  
