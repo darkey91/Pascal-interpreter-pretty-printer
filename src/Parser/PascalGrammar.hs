@@ -63,14 +63,13 @@ data Parameter = Parameter
   { paramIdents :: [VariableIdent],
     paramType :: PascalType
   }
-  deriving (Eq, Show)
-
+  deriving Show
+    
 data PascalType = PascalString | PascalInteger | PascalReal | PascalBoolean | PascalChar | PascalVoid
   deriving (Eq, Show)
 
 instance Ord PascalType where
   a `compare` b = show a `compare` show b
-
 
 data PascalTypedValue
   = StringValue String

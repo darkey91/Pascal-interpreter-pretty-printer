@@ -5,6 +5,7 @@ import Control.Monad.Except
 import Control.Monad.Trans.State
 import Data.Map.Strict as M
 import Parser.PascalGrammar
+import Utils
 
 type ExpectedType = PascalType
 
@@ -19,20 +20,23 @@ data Err
   | UndefinedFunction FunctionKey
   | AmbiguousFunction FunctionKey
   | UnexpectedError String
-  | NotSupportedOperation String PascalTypedValue
+  | NotSupportedOperation UnaryOperation PascalTypedValue
+  | TypesNotMatch BinaryOperation PascalTypedValue PascalTypedValue
   deriving (Show)
 
-type FunctionValue = (PascalType, Code)
-
 type FunctionKey = (Identifier, [PascalType])
+
+type FunctionValue = ([Parameter], PascalType, Code)
 
 type FunctionData = M.Map FunctionKey FunctionValue
 
 type VariableEntry = (PascalTypedValue, PascalType)
 
-type Scope = (M.Map String VariableEntry)
+type Scope = M.Map Identifier VariableEntry
 
-type Store = (FunctionData, [Scope])
+type TemporaryValue = (Identifier, PascalTypedValue) 
+
+type Store = (FunctionData, [Scope], [TemporaryValue])
 
 type Interpreter = StateT Store (Except Err)
 
@@ -42,26 +46,26 @@ createFunctionKey ident params = (ident, concatMap (\p -> replicate (length $ pa
 -- puts function definition to store
 defineFunction :: FunctionKey -> FunctionValue -> Interpreter ()
 defineFunction funcKey funcValue = do
-  (fd, scope) <- get
+  (fd, scope, temp) <- get
   if M.notMember funcKey fd
-    then put (M.insert funcKey funcValue fd, scope)
+    then put (M.insert funcKey funcValue fd, scope, temp)
     else throwError $ AmbiguousFunction funcKey
 
 -- returns function from store
 getFunction :: FunctionKey -> Interpreter FunctionValue
 getFunction key = do
-  (fd, _) <- get
+  (fd, _, _) <- get
   case M.lookup key fd of
     Nothing -> throwError $ UndefinedFunction key
     Just res -> return res
 
 -- puts variable declaration to topmost scope
 declareVar :: Identifier -> PascalType -> Interpreter ()
-declareVar ident vType = modify $ \(fd, vd : vds) -> (fd, M.insert ident (EmptyValue, vType) vd : vds)
+declareVar ident vType = modify $ \(fd, vd : vds, temp) -> (fd, M.insert ident (EmptyValue, vType) vd : vds, temp)
 
 getVar :: Identifier -> Interpreter VariableEntry
 getVar ident = do
-  (_, scope) <- get
+  (_, scope, _) <- get
   let var = msum $ M.lookup ident <$> scope
   case var of
     Nothing -> throwError $ UndeclaredVariable ident
@@ -70,14 +74,14 @@ getVar ident = do
 -- assigns the topmost variable a given expression
 assignVar :: Identifier -> PascalTypedValue -> Interpreter ()
 assignVar ident value = do
-  (fd, scope) <- get
+  (fd, scope, temp) <- get
   (_, vType) <- getVar ident
   let (f, s) = break (M.member ident) scope
   case s of
     [] -> throwError $ UndeclaredVariable ident
     (sc : scs) ->
       if getType value == vType
-        then put (fd, f ++ M.insert ident (value, vType) sc : scs)
+        then put (fd, f ++ M.insert ident (value, vType) sc : scs, temp)
         else throwError $ TypeCastErr vType $ getType value
 
 -- returns the topmost variable
@@ -92,9 +96,7 @@ unaryOp :: UnaryOperation -> PascalTypedValue -> Interpreter PascalTypedValue
 unaryOp Not (BooleanValue b) = return $ BooleanValue $ not b
 unaryOp Negate (IntegerValue i) = return $ IntegerValue $ negate i
 unaryOp Negate (RealValue r) = return $ RealValue $ negate r
-
---todo
---unaryOp op val = throwError $ NotSupportedOperation $ show op $ val
+unaryOp op val = throwError $ NotSupportedOperation op val
 
 binaryOp :: BinaryOperation -> PascalTypedValue -> PascalTypedValue -> Interpreter PascalTypedValue
 binaryOp Plus (IntegerValue l) (IntegerValue r) = return $ IntegerValue $ l + r
@@ -131,6 +133,7 @@ binaryOp LEOp l r = do
   eq <- binaryOp EqOp l r
   lt <- binaryOp LTOp r l
   binaryOp Or eq lt
+binaryOp op l r = throwError $ TypesNotMatch op l r
 
 eval :: Expr -> Interpreter PascalTypedValue
 eval (ExprBracketed expr) = eval expr
@@ -145,13 +148,23 @@ eval (ExprBinOp binOp lhs rhs) = do
 eval (ExprUnOp unOp expr) = do
   e <- eval expr
   unaryOp unOp e
-eval (ExprFunctionCall ident paramList) = do
-  (fd, scope) <- get
-  params <- sequence $ eval <$> paramListParams paramList
-  let funcKey = (ident, getType <$> params)
-  fun <- getFunction funcKey
-  --  todo
-  undefined
+eval (ExprFunctionCall ident argList) = do
+  (fd, scope, temp) <- get
+  argValues <- sequence $ eval <$> paramListParams argList
+  let argTypes = getType <$> argValues
+  let funcKey = (ident, argTypes)
+  (params, rType, body) <- getFunction funcKey
+  let newScope = M.fromList $ zip (concatMap paramIdents params) (zip argValues argTypes)
+  case rType of
+    PascalVoid -> put (fd, newScope : scope, temp) >> interpret body >> return EmptyValue
+    _ -> do 
+      put (fd, newScope : scope, (ident, EmptyValue) : temp) 
+      interpret body 
+      (fd', scope', temp') <- get
+      case temp' of
+        [] -> throwError $ UnexpectedError "function call"
+        ((_, rVal):tmp) -> put (fd', scope', tmp) >> (getType rVal == rType ? return rVal :? throwError (TypeCastErr rType $getType rVal)) 
+          
 
 interpret :: Code -> Interpreter ()
 interpret (Free (PrintLn str next)) = undefined
@@ -160,11 +173,10 @@ interpret (Free (Assign ident expr next)) = do
   exprResult <- eval expr
   assignVar ident exprResult
   interpret next
-interpret (Free (While expr code next)) = do
+interpret block@(Free (While expr body next)) = do
   res <- eval expr
   case res of
-    --    todo сперва выполняю code затем иду опять выполянть это
-    (BooleanValue True) -> undefined
+    (BooleanValue True) -> interpret body >> interpret block
     (BooleanValue False) -> interpret next
     _ -> throwError $ TypeCastErr PascalBoolean $ getType res
 interpret (Free (If expr succCode unsuccCode next)) = do
@@ -175,10 +187,31 @@ interpret (Free (If expr succCode unsuccCode next)) = do
     _ -> throwError $ TypeCastErr PascalBoolean $ getType res
   interpret next
 interpret (Free (Function ident paramSection returnType body next)) = do
-  let key = createFunctionKey ident $ parameterSectionParams paramSection
-  defineFunction key (returnType, body)
+  let params = parameterSectionParams paramSection
+  let key = createFunctionKey ident params
+  defineFunction key (params, returnType, body)
   interpret next
 interpret (Free (Expression expr next)) = eval expr >> interpret next
 interpret (Free (VDeclaration ident vType next)) = declareVar ident vType >> interpret next
---interpret (Free (For ident exprFrom increment exprTo code next))
 interpret (Free (Empty next)) = interpret next
+interpret (Free (For ident exprFrom increment exprTo body next)) = do
+  to <- eval exprTo
+  from <- eval exprFrom
+  case increment of
+    To -> forStmtInterpHelper ident from to body Plus
+    DownTo -> forStmtInterpHelper ident from to body Minus
+  interpret next
+interpret (Pure _)  = return () 
+
+forStmtInterpHelper :: Identifier -> PascalTypedValue -> PascalTypedValue -> Code -> BinaryOperation -> Interpreter ()
+forStmtInterpHelper ident from to body binOp = do
+  assignVar ident from
+  cond <- binaryOp GTOp from to
+  newIterVal <- binaryOp binOp from $ IntegerValue 1
+  if toBool cond
+    then return ()
+    else interpret body >> forStmtInterpHelper ident newIterVal to body binOp
+
+toBool :: PascalTypedValue -> Bool
+toBool (BooleanValue b) = b
+toBool _ = False
