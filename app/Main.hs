@@ -13,10 +13,6 @@ import Text.Pretty.Simple (pPrint)
 
 import Interpreter ( run )
 
---test todo remove
---programAst =
-
-
 usageMsg :: IO ()
 usageMsg = do
   appName <- getProgName

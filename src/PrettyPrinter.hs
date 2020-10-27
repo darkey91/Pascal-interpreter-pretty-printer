@@ -29,7 +29,7 @@ instance PrettyPrintable Program where
 
 instance PrettyPrintableStr Program where
   prettyPrintStr prog = case prettyPrint prog of
-    [] -> ""
+    []       -> ""
     (p : ps) -> p ++ concatMap ('\n' :) ps
 
 instance PrettyPrintable Block where
@@ -42,7 +42,7 @@ instance PrettyPrintable VarDeclPart where
     let varKw = "var"
     let (singleDef, otherDef) = case varDeclPartDecls varPart of
           [v] -> (' ' : prettyPrintStr v, [])
-          vs -> ([], pprintStringsWithTab vs)
+          vs  -> ([], pprintStringsWithTab vs)
     (varKw ++ singleDef) : otherDef
 
 instance PrettyPrintable ProcedureOrFunctionDeclaration where
@@ -50,7 +50,7 @@ instance PrettyPrintable ProcedureOrFunctionDeclaration where
     let params = prettyPrintStr $ functionParameters fDecl
     let (funcOrProc, returnType) = case functionReturnType fDecl of
           PascalVoid -> ("\nprocedure ", "")
-          otherType -> ("\nfunction ", ':' : ' ' : prettyPrintStr otherType)
+          otherType  -> ("\nfunction ", ':' : ' ' : prettyPrintStr otherType)
     (funcOrProc ++ functionIdent fDecl ++ params ++ returnType ++ ";") : addSuffixToLastStr ";" (prettyPrint (functionBlock fDecl))
 
 instance PrettyPrintable Statements where
@@ -80,7 +80,7 @@ instance PrettyPrintable Statement where
     let succCase = pprintStatement succStmt
     let unsuccCase = case unsuccStmt of
           EmptyStatement -> []
-          other -> "else" : pprintStatement other
+          other          -> "else" : pprintStatement other
     ifHeader : succCase ++ succCase ++ unsuccCase
 
 instance PrettyPrintableStr ParamList where
@@ -100,23 +100,10 @@ instance PrettyPrintableStr Expr where
   prettyPrintStr (ExprFunctionCall str params) = str ++ prettyPrintStr params
 
 instance PrettyPrintableStr BinaryOperation where
-  prettyPrintStr Plus = " + "
-  prettyPrintStr Minus = " - "
-  prettyPrintStr Mul = " * "
-  prettyPrintStr Div = " \\ "
-  prettyPrintStr IntDiv = " div "
-  prettyPrintStr EqOp = " = "
-  prettyPrintStr NeqOp = " <> "
-  prettyPrintStr GTOp = " > "
-  prettyPrintStr LTOp = " < "
-  prettyPrintStr GEOp = " >= "
-  prettyPrintStr LEOp = " <= "
-  prettyPrintStr And = " and "
-  prettyPrintStr Or = " or "
+  prettyPrintStr = show
 
 instance PrettyPrintableStr UnaryOperation where
-  prettyPrintStr Negate = "-"
-  prettyPrintStr Not = "not "
+  prettyPrintStr = show
 
 instance PrettyPrintableStr Parameter where
   prettyPrintStr p = do
@@ -131,21 +118,15 @@ instance PrettyPrintableStr VariableDeclaration where
     idents ++ ": " ++ pasType ++ ";"
 
 instance PrettyPrintableStr PascalTypedValue where
-  prettyPrintStr (StringValue t) = t
-  prettyPrintStr (IntegerValue t) = prettyPrintStr t
-  prettyPrintStr (RealValue t) = prettyPrintStr t
-  prettyPrintStr (BooleanValue t) = prettyPrintStr t
   prettyPrintStr EmptyValue = ""
+  prettyPrintStr t          = show t
 
 instance PrettyPrintableStr PascalType where
-  prettyPrintStr PascalString = "string"
-  prettyPrintStr PascalInteger = "integer"
-  prettyPrintStr PascalReal = "real"
-  prettyPrintStr PascalBoolean = "boolean"
   prettyPrintStr PascalVoid = ""
+  prettyPrintStr other      = show other
 
 instance PrettyPrintableStr Increment where
-  prettyPrintStr To = "to"
+  prettyPrintStr To     = "to"
   prettyPrintStr DownTo = "downTo"
 
 instance (PrettyPrintable a) => PrettyPrintable [a] where

@@ -2,7 +2,7 @@
 
 module Code where
 
-import Control.Monad
+import Control.Monad ( join )
 import Parser.PascalGrammar
 
 data PascalCodeF next
@@ -14,24 +14,9 @@ data PascalCodeF next
   | For Identifier Expr Increment Expr Code next
   | If Expr Code Code next
   | Function Identifier ParameterSection PascalType Code next
-  | Expression Expr next
   | VDeclaration Identifier PascalType next
+  | ProcedureCall Identifier ParamList next
   deriving (Functor)
-
---todo remove
-showProgram :: Show r => Free PascalCodeF r -> String 
-showProgram  (Free (Writeln str next)) = "AAAAA"
-showProgram  (Free (Readln f next)) = "AAAAA"
-showProgram  (Free (Assign ident expr next)) = "assign " ++ "\n" ++ showProgram next  
-showProgram  (Free (Empty next)) = "empty\n" ++ showProgram next  
-showProgram  (Free (While expr code next)) = "while\n" ++ showProgram next 
-showProgram  (Free (For identifier exprFrom increment exprTo code next)) = "for\n" ++ showProgram next 
-showProgram  (Free (If expr succCode unsuccCode next)) = "if\n" ++ showProgram next 
-showProgram  (Free (Function udentifier parameterSection pascalType code next)) = "funcDecl\n" ++ showProgram next 
-showProgram  (Free (Expression expr next)) = "expr " ++ show expr ++ "\n" ++ showProgram next 
-showProgram  (Free (VDeclaration identifier pascaltype next )) = "vdecl\n" ++ showProgram next  
-showProgram (Pure a) = show a
-   
 
 data Free f a
   = Pure a
@@ -72,7 +57,7 @@ instance CodeConverter ProcedureOrFunctionDeclaration where
 
 instance CodeConverter Statement where
   convert (AssignmentStmt ident expr) = liftF $ Assign ident expr ()
-  convert (ProcedureStmt ident paramList) = liftF $ Expression (ExprFunctionCall ident paramList) ()
+  convert (ProcedureStmt ident paramList) = liftF $ ProcedureCall ident paramList ()
   convert (WritelnStmt paramList) = liftF $ Writeln (paramListParams paramList) ()
   convert (ReadlnStmt idents) = liftF $ Readln idents ()
   convert (CompoundStatement stmts) = convert $ statements stmts
@@ -98,4 +83,4 @@ instance Functor f => Applicative (Free f) where
 instance Functor f => Monad (Free f) where
   return = pure
   (Pure a) >>= f = f a
-  (Free fs) >>= f = Free $ (>>= f) <$> fs 
+  (Free fs) >>= f = Free $ (>>= f) <$> fs

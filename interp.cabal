@@ -17,7 +17,7 @@ copyright:      2020 Diana Kudaiberdieva
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-extra-source-files:
+ex¸-source-files:
     README.md
     ChangeLog.md
     src/Parser/PascalLexer.x
@@ -28,7 +28,6 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
       PrettyPrinter
       Utils
       Parser.PascalGrammar
@@ -45,7 +44,6 @@ library
       array
     , base >=4.7 && <5
     , mtl
-    , transformers
     , containers
   default-language: Haskell2010
 
@@ -59,7 +57,6 @@ executable interp-exe
   build-depends:
       base >=4.7 && <5
     , interp
-    , transformers
     , mtl
     , filepath
     , pretty-simple
