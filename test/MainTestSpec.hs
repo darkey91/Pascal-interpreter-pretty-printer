@@ -1,12 +1,13 @@
 module MainTestSpec (spec) where
 
-import Code
+import Code ()
 import Parser.ParseResult (ParseResult (..))
 import Parser.PascalGrammar
 import Parser.PascalLexer (alexScanTokens)
 import Parser.PascalParser (parsePascalCode)
 import Test.Hspec
 
+program :: String
 program = unlines ["program Test;",
                   "var a, b, c, d: Integer;",
                   "function calculator(a, b, c, d: integer): integer;",
@@ -18,6 +19,7 @@ program = unlines ["program Test;",
                   "writeln('a + b * c - d = ', calculator(a,b,c,d));",
                   "end."]
 
+ast :: Program
 ast = Program
     { programIdent = "Test"
     , programBlock = BlockWithVar
@@ -60,9 +62,6 @@ ast = Program
             )
         )
     }
-
-varDecl :: Identifier -> Code
-varDecl ident = liftF $ VDeclaration ident PascalInteger ()
 
 spec :: Spec
 spec = do

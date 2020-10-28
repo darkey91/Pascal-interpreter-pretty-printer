@@ -1,6 +1,5 @@
 module Parser.PascalLexerSpec(spec) where
 
-import Control.Exception
 import Parser.PascalLexer
 import Test.Hspec
 

@@ -29,6 +29,8 @@ library:
   source-dirs: src
   dependencies:
     - array
+    - mtl
+    - containers
 
 executables:
   interp-exe:
@@ -49,6 +51,7 @@ tests:
     ghc-options:
     - -threaded
     - -rtsopts
+    - -Wall
     - -with-rtsopts=-N
     dependencies:
     - interp

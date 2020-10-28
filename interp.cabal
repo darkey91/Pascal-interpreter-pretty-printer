@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: dbf0264376bf630ad33ef57d1a6869f3958ad88b8ca09dcc25954b8f39ea4c21
+-- hash: 186ee97bda1533d90dc2ef3558a86992a1b2e57b127cd03acc82f1ecac4bec66
 
 name:           interp
 version:        0.1.0.0
@@ -17,10 +17,11 @@ copyright:      2020 Diana Kudaiberdieva
 license:        BSD3
 license-file:   LICENSE
 build-type:     Simple
-ex¸-source-files:
+extra-source-files:
     README.md
     ChangeLog.md
     src/Parser/PascalLexer.x
+    src/Parser/PascalParser.y
 
 source-repository head
   type: git
@@ -28,14 +29,14 @@ source-repository head
 
 library
   exposed-modules:
-      PrettyPrinter
-      Utils
+      Code
+      Interpreter
+      Parser.ParseResult
       Parser.PascalGrammar
       Parser.PascalLexer
       Parser.PascalParser
-      Parser.ParseResult
-      Interpreter
-      Code
+      PrettyPrinter
+      Utils
   other-modules:
       Paths_interp
   hs-source-dirs:
@@ -43,8 +44,8 @@ library
   build-depends:
       array
     , base >=4.7 && <5
-    , mtl
     , containers
+    , mtl
   default-language: Haskell2010
 
 executable interp-exe
@@ -57,8 +58,6 @@ executable interp-exe
   build-depends:
       base >=4.7 && <5
     , interp
-    , mtl
-    , filepath
     , pretty-simple
   default-language: Haskell2010
 
@@ -66,12 +65,12 @@ test-suite interp-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Parser.PascalLexerSpec
       MainTestSpec
+      Parser.PascalLexerSpec
       Paths_interp
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  ghc-options: -threaded -rtsopts -Wall -with-rtsopts=-N
   build-depends:
       base >=4.7 && <5
     , hspec

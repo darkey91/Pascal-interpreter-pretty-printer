@@ -1,14 +1,12 @@
 module Main where
 
-import Code
-import Control.Monad.Except
+import Code ()
 import Parser.ParseResult (ParseResult (..))
 import Parser.PascalGrammar
 import Parser.PascalLexer (alexScanTokens)
 import Parser.PascalParser (parsePascalCode)
 import PrettyPrinter (pprintCode)
 import System.Environment (getArgs, getProgName)
-import System.IO
 import Text.Pretty.Simple (pPrint)
 
 import Interpreter ( run )
@@ -52,7 +50,6 @@ exec fileName = do
 
 main :: IO ()
 main = do
---  putStrLn $ showProgram $ convert programAst
   args <- getArgs
   case args of
     ["pprint", fName] -> pprint fName
