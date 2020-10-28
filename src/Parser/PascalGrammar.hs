@@ -25,48 +25,56 @@ where
 
 import Data.Char (toLower)
 
+--- represents pascal programm
 data Program = Program
   { programIdent :: Identifier,
     programBlock :: Block
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
+--- represents block with statements
 data Block
   = SimpleBlock Statements
   | BlockWithVar VarDeclParts Block
   | BlockWithFunc ProcedureAndFunctionDeclParts Block
-  deriving (Show)
+  deriving (Eq, Show)
 
 type VarDeclParts = [VarDeclPart]
 
+--- represents part with variable declaration
 newtype VarDeclPart = VarDeclPart {varDeclPartDecls :: [VariableDeclaration]}
-  deriving (Show)
+  deriving (Eq, Show)
 
+--represents variable(s) declaration
 data VariableDeclaration = VariableDeclaration
   { variableDeclarationIdents :: [VariableIdent],
     variableDeclarationType   :: PascalType
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
 type ProcedureAndFunctionDeclParts = [ProcedureOrFunctionDeclaration]
 
+--- represents part with procedure or function declaration
 data ProcedureOrFunctionDeclaration = ProcedureOrFunctionDeclaration
   { functionIdent      :: Identifier,
     functionParameters :: ParameterSection,
     functionReturnType :: PascalType,
     functionBlock      :: Block
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
+--- represents formal parameter list for function or procedure
 newtype ParameterSection = ParameterSection {parameterSectionParams :: [Parameter]}
-  deriving (Show)
+  deriving (Eq, Show)
 
+--- represents formal parameter for function or procedure
 data Parameter = Parameter
   { paramIdents :: [VariableIdent],
     paramType   :: PascalType
   }
-  deriving (Show)
+  deriving (Eq, Show)
 
+--- Represents supported pascal types. PascalVoid is used as returned value of procedures.
 data PascalType
   = PascalString
   | PascalInteger
@@ -85,12 +93,14 @@ instance Show PascalType where
 instance Ord PascalType where
   a `compare` b = show a `compare` show b
 
+--- represents value typed with supported pascal type. EmptyValue is used for variables wich are not defined yet.
 data PascalTypedValue
   = StringValue String
   | IntegerValue Int
   | RealValue Double
   | BooleanValue Bool
   | EmptyValue
+  deriving Eq
 
 getType :: PascalTypedValue -> PascalType
 getType (StringValue _)  = PascalString
@@ -107,12 +117,13 @@ instance Show PascalTypedValue where
   show EmptyValue       = "_|_"
 
 newtype Statements = Statements {statements :: [Statement]}
-  deriving (Show)
+  deriving (Eq, Show)
 
 type SuccessfulCase = Statement
 
 type UnsuccessfulCase = Statement
 
+--- represents different kinds of statements.
 data Statement
   = AssignmentStmt Identifier Expr
   | ProcedureStmt Identifier ParamList
@@ -123,23 +134,27 @@ data Statement
   | WritelnStmt ParamList
   | ReadlnStmt [VariableIdent]
   | EmptyStatement
-  deriving (Show)
+  deriving (Eq, Show)
 
+--- represent parameter list for function or procedure call
 newtype ParamList = ParamList {paramListParams :: [Expr]}
-  deriving (Show)
+  deriving (Eq, Show)
 
 isCompoundStmt :: Statement -> Bool
 isCompoundStmt stmt = case stmt of
   CompoundStatement _ -> True
   _                   -> False
 
+--- represents type of iterating in for loop
 data Increment = To | DownTo
-  deriving (Show)
+  deriving (Eq, Show)
 
 type VariableIdent = String
 
 type Identifier = String
 
+
+--- represents differend kinds of expressions. Expression should return value.
 data Expr
   = ExprBracketed Expr
   | ExprVal PascalTypedValue
@@ -147,8 +162,9 @@ data Expr
   | ExprUnOp UnaryOperation Expr
   | ExprVar String
   | ExprFunctionCall Identifier ParamList
-  deriving Show
+  deriving (Eq, Show)
 
+--- represents supported kinds of binary operations
 data BinaryOperation
   = Plus
   | Minus
@@ -163,6 +179,7 @@ data BinaryOperation
   | LEOp
   | And
   | Or
+  deriving Eq
 
 instance Show BinaryOperation where
   show Plus   = " + "
@@ -179,7 +196,9 @@ instance Show BinaryOperation where
   show And    = " and "
   show Or     = " or "
 
+--- represents supported kinds of unary operations
 data UnaryOperation = Not | Negate
+  deriving Eq
 
 instance Show UnaryOperation where
   show Negate = "-"

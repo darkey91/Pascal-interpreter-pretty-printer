@@ -26,9 +26,7 @@ BEGIN
     FOR i := 1 TO size DO
     for j := 2 TO size DO
         begin
-        writeLn('not yet');
         tmp := wrongSum(42, 16);
-        writeLn('can');
         end;
     Writeln('Wrong sum = ', tmp);
 END.

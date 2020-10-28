@@ -6,6 +6,7 @@ import Data.List (intercalate)
 import Parser.PascalGrammar
 import Utils
 
+--- prety prints given ast
 pprintCode :: Program -> String
 pprintCode = prettyPrintStr
 

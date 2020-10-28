@@ -89,19 +89,12 @@ tokens :-
     \' (\'\' | ~[\'])* \'                           { tokenize StringValToken  }
 
 {
--- Each right-hand side has type :: AlexPosn -> String -> Token
-
--- data AlexPosn = AlexPn !Int  -- absolute character offset
---                        !Int  -- line number
---                        !Int  -- column number
-
 -- Token creator
 tokenize :: TokenType -> AlexPosn -> String -> Token
-tokenize t (AlexPn _ line col) s = Token { tokenType = t
-                                         , tokenLine = line
-                                         , tokenColumn = col
-                                         , tokenValue = s
-                                         }
+tokenize t (AlexPn _ line col) s = do
+  case t of
+    StringValToken -> Token t line col (init $ tail s)
+    _              -> Token t line col s
 
 data TokenType = ProgramToken | BeginToken | EndToken
   | IdentifierToken

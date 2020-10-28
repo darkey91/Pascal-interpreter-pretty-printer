@@ -38,8 +38,8 @@ instance Show Err where
   show (TypesNotMatch binOp lVal rVal) = concat ["Type mismatch: ", show lVal, show binOp, show rVal ]
   show (MultipleDeclaration ident) = "Multiple declaration of variable " ++ ident
   show (NoValueReturned fIdent params) = do
-    let parametersTypes = concatMap (\p -> replicate (length $ paramIdents p) $ (show $ paramType p)) params
-    "No value returned from function " ++ fIdent ++ "(" ++ intercalate "," parametersTypes ++  ")"
+    let pTypes = show <$> snd (createFunctionKey fIdent params)
+    "No value returned from function " ++ fIdent ++ "(" ++ intercalate "," pTypes ++  ")"
 
 instance Exception Err
 
@@ -60,21 +60,18 @@ type Interpreter = StateT Store IO
 createFunctionKey :: Identifier -> [Parameter] -> FunctionKey
 createFunctionKey ident params = (ident, concatMap (\p -> replicate (length $ paramIdents p) $ paramType p) params)
 
--- puts function definition to store
 defineFunction :: FunctionKey -> FunctionValue -> Interpreter ()
 defineFunction funcKey funcValue = do (fd, scope) <- get
                                       if M.notMember funcKey fd
                                       then put (M.insert funcKey funcValue fd, scope)
                                       else liftIO $ throwIO $ AmbiguousFunction funcKey
 
--- returns function from store
 getFunction :: FunctionKey -> Interpreter FunctionValue
 getFunction key  = do (fd, _) <- get
                       case M.lookup key fd of
                         Nothing  -> liftIO $ throwIO $ UndefinedFunction key
                         Just res -> return res
 
--- puts variable declaration to topmost scope
 declareVar :: Identifier -> PascalType -> Interpreter ()
 declareVar ident vType = do (fd, v : vs) <- get
                             if M.member ident v
@@ -88,7 +85,6 @@ getVar ident = do (_, scope) <- get
                     Nothing       -> liftIO $ throwIO $ UndeclaredVariable ident
                     Just varEntry -> return varEntry
 
--- assigns the topmost variable a given expression
 assignVar :: Identifier -> PascalTypedValue -> Interpreter ()
 assignVar ident value  = do (fd, scope) <- get
                             (_, vType) <- getVar ident
@@ -99,13 +95,11 @@ assignVar ident value  = do (fd, scope) <- get
                                             then put (fd, f ++ (M.insert ident (value, vType) sc : scs))
                                             else liftIO $ throwIO $ TypeCastErr vType (getType value) ("Can't assign variable " ++ ident ++ ". ")
 
--- returns the topmost variable
 getDefinedVar :: Identifier -> Interpreter VariableEntry
 getDefinedVar ident  = do (value, vType) <- getVar ident
                           case value of
                             EmptyValue -> liftIO $ throwIO $ UndefinedVariable ident
                             _          -> return (value, vType)
-
 unaryOp :: UnaryOperation -> PascalTypedValue -> Interpreter PascalTypedValue
 unaryOp Not (BooleanValue b)    = return $ BooleanValue $ not b
 unaryOp Negate (IntegerValue i) = return $ IntegerValue $ negate i
@@ -155,7 +149,6 @@ eval (ExprBinOp binOp lhs rhs) = do l <- eval lhs
                                     binaryOp binOp l r
 eval (ExprUnOp unOp expr)      = do e <- eval expr
                                     unaryOp unOp e
--- todo procedure call and function call
 eval (ExprFunctionCall fIdent argList) = do (params, _, body) <- prepareStoreForFuncCall fIdent argList True
                                             interpret body
                                             (retValue, _) <- getVar fIdent
@@ -214,7 +207,8 @@ interpret (Pure _) = return ()
 
 readValueIO :: PascalType -> Interpreter PascalTypedValue
 readValueIO = \case
-  PascalString -> liftIO $ StringValue <$> readLn
+  PascalString -> liftIO $ do l <- getLine
+                              return (StringValue l)
   PascalInteger -> liftIO $ IntegerValue <$> readLn
   PascalReal -> liftIO $ RealValue <$> readLn
   PascalBoolean -> liftIO $ BooleanValue <$> readLn
@@ -244,7 +238,7 @@ prepareStoreForFuncCall ident argList isFunction = do (fd, scope) <- get
                                                       else put (fd, M.fromList newScope : scope)
                                                       return funcValue
 
-
+--- interprets given ast
 run :: Program -> IO ()
 run prog = do _ <- evalStateT (interpret $ convert $ programBlock prog) (M.empty, [M.empty])
               return ()

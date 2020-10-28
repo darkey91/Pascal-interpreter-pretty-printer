@@ -67,6 +67,7 @@ test-suite interp-test
   main-is: Spec.hs
   other-modules:
       Parser.PascalLexerSpec
+      MainTestSpec
       Paths_interp
   hs-source-dirs:
       test

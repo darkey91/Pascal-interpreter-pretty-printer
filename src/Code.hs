@@ -1,10 +1,11 @@
 {-# LANGUAGE DeriveFunctor #-}
 
-module Code where
+module Code where 
 
 import Control.Monad ( join )
 import Parser.PascalGrammar
 
+--- represents kinds of action in pascal
 data PascalCodeF next
   = Writeln [Expr] next
   | Readln [Identifier] next
@@ -22,11 +23,13 @@ data Free f a
   = Pure a
   | Free (f (Free f a))
 
+--- represents sequence of actions
 type Code = Free PascalCodeF ()
 
 liftF :: Functor f => f a -> Free f a
 liftF p = Free (fmap Pure p)
 
+--- helps to convert parsed ast to sequence of actions
 class CodeConverter a where
   convert :: a -> Code
 
